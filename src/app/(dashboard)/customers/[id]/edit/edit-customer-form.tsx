@@ -23,7 +23,7 @@ export function EditCustomerForm({
           type="text"
           required
           defaultValue={customer.name}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm"
         />
       </div>
 
@@ -34,7 +34,7 @@ export function EditCustomerForm({
           type="text"
           required
           defaultValue={customer.phone}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm"
         />
       </div>
 
@@ -44,7 +44,7 @@ export function EditCustomerForm({
           name="email"
           type="email"
           defaultValue={customer.email ?? ""}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm"
         />
       </div>
 
@@ -54,7 +54,7 @@ export function EditCustomerForm({
           name="address"
           type="text"
           defaultValue={customer.address ?? ""}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm"
         />
       </div>
 
@@ -63,7 +63,7 @@ export function EditCustomerForm({
       <button
         type="submit"
         disabled={isPending}
-        className="rounded-md bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+        className="rounded-md bg-orange-600 text-white px-4 py-2 text-sm font-medium hover:bg-orange-700 disabled:opacity-50"
       >
         {isPending ? "Saving..." : "Save Changes"}
       </button>

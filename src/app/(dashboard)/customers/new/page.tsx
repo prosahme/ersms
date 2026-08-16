@@ -14,7 +14,7 @@ return(
             name="name"
             type="text"
             required
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm"
           />
             </div>
 
@@ -24,7 +24,7 @@ return(
             name="phone"
             type="text"
             required
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm"
           />
         </div>
 
@@ -33,7 +33,7 @@ return(
           <input
             name="email"
             type="email"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm"
           />
         </div>
         <div>
@@ -41,7 +41,7 @@ return(
           <input
             name="address"
             type="text"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm"
           />
         </div>
 
@@ -50,7 +50,7 @@ return(
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-md bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-md bg-orange-600 text-white px-4 py-2 text-sm font-medium hover:bg-orange-700 disabled:opacity-50"
         >
           {isPending ? "Saving..." : "Save Customer"}
         </button>

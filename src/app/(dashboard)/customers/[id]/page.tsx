@@ -20,12 +20,12 @@ export default async function CustomerProfilePage({
     
     <div className="p-8">
       <h1 className="text-2xl font-semibold">{customer.name}</h1>
-      <p className="text-slate-500 mt-1">{customer.phone}</p>
-      {customer.email && <p className="text-slate-500">{customer.email}</p>}
-      {customer.address && <p className="text-slate-500">{customer.address}</p>}
+      <p className="text-orange-500 mt-1">{customer.phone}</p>
+      {customer.email && <p className="text-orange-500">{customer.email}</p>}
+      {customer.address && <p className="text-orange-500">{customer.address}</p>}
 
       <h2 className="text-lg font-semibold mt-8 mb-2">Repair History</h2>
-      <p className="text-slate-500">No repairs yet.</p>
+      <p className="text-orange-500">No repairs yet.</p>
     </div>
 
      

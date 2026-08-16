@@ -26,34 +26,34 @@ import { DeleteCustomerButton } from "./delete-button";
         <h1 className="text-2xl font-semibold">Customers</h1>
         <Link
           href="/customers/new"
-          className="rounded-md bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700"
+          className="rounded-md bg-orange-600 text-white px-4 py-2 text-sm font-medium hover:bg-orange-700"
         >
           Add Customer
         </Link>
       </div>
-      <p className="text-sm text-slate-500 mb-6">
+      <p className="text-sm text-orange-500 mb-6">
         Manage your customer database and repair history.
       </p>
 
-      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+      <div className="bg-white border border-orange-200 rounded-lg overflow-hidden">
      <form className="mb-4">
   <input
     type="text"
     name="search"
     defaultValue={search}
     placeholder="Search by name or phone..."
-    className="w-full max-w-sm rounded-md border border-slate-300 px-3 py-2 text-sm"
+    className="w-full max-w-sm rounded-md border border-orange-300 px-3 py-2 text-sm"
   />
 </form>
 
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 border-b border-slate-200">
+          <thead className="bg-orange-50 border-b border-orange-200">
             
             <tr>
-              <th className="text-left px-4 py-3 font-medium text-slate-500">Customer Name</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-500">Phone</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-500">Email</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-500">Actions</th>
+              <th className="text-left px-4 py-3 font-medium text-orange-500">Customer Name</th>
+              <th className="text-left px-4 py-3 font-medium text-orange-500">Phone</th>
+              <th className="text-left px-4 py-3 font-medium text-orange-500">Email</th>
+              <th className="text-left px-4 py-3 font-medium text-orange-500">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -61,7 +61,7 @@ import { DeleteCustomerButton } from "./delete-button";
     <tr key={customer.id} className="border-b border-slate-100 last:border-0">
       <td className="px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-semibold">
+          <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-xs font-semibold">
             {customer.name.charAt(0)}
           </div>
           <span>{customer.name}</span>
@@ -70,7 +70,7 @@ import { DeleteCustomerButton } from "./delete-button";
       <td className="px-4 py-3 text-slate-600">{customer.phone}</td>
       <td className="px-4 py-3 text-slate-600">{customer.email ?? "—"}</td>
       <td className="px-4 py-3 space-x-3">
-  <Link href={`/customers/${customer.id}`} className="text-blue-600 hover:underline text-sm">
+  <Link href={`/customers/${customer.id}`} className="text-orange-600 hover:underline text-sm">
     View Profile
   </Link>
   <Link href={`/customers/${customer.id}/edit`} className="text-slate-600 hover:underline text-sm">
@@ -85,7 +85,7 @@ import { DeleteCustomerButton } from "./delete-button";
         </table>
 
         {customers.length === 0 && (
-          <p className="text-center text-slate-500 py-8">No customers yet.</p>
+          <p className="text-center text-orange-500 py-8">No customers yet.</p>
         )}
       </div>
     </div>
