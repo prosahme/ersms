@@ -1,0 +1,67 @@
+import { prisma } from "@/lib/prisma";
+import Link from "next/link";
+import {DeletePartButton} from "./delete-button"
+import { formatCurrency } from "@/lib/format-currency";
+
+export default async function InventoryPage() {
+  const parts = await prisma.sparePart.findMany({
+    where: { deletedAt: null },
+    orderBy: { name: "asc" },
+  });
+
+  return (
+    <div className="p-8">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold">Inventory</h1>
+        <Link
+          href="/inventory/new"
+          className="rounded-md bg-orange-600 text-white px-4 py-2 text-sm font-medium hover:bg-orange-700"
+        >
+          Add Part
+        </Link>
+      </div>
+
+      <div className="space-y-3">
+        {parts.map((part) => {
+          const isLowStock = part.quantityAvailable <= part.lowStockThreshold;
+          return (
+            <div
+              key={part.id}
+              className={`bg-white border border-orange-200 rounded-lg p-4 flex items-center justify-between ${
+                isLowStock ? "border-l-4 border-l-red-500" : ""
+              }`}
+            >
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="font-medium">{part.name}</p>
+                  {isLowStock && (
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                      Low Stock
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 text-sm text-orange-500">
+                  <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 text-xs">{part.category}</span>
+                  <span>{part.quantityAvailable} units</span>
+                  
+             <span className="text-orange-600 font-medium">{formatCurrency(part.unitPrice)}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Link href={`/inventory/${part.id}/edit`} className="text-slate-600 hover:underline text-sm">
+                  Edit
+                </Link>
+                <DeletePartButton id={part.id} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {parts.length === 0 && (
+        <p className="text-center text-orange-500 py-8">No spare parts yet.</p>
+      )}
+    </div>
+  );
+  
+}
