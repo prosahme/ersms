@@ -27,6 +27,7 @@ model User {
   updatedAt   DateTime @updatedAt
   createdBy   String?
   updatedBy   String?
+  assignedRepairs RepairTicket[]
 }
 
 model Customer {
@@ -40,4 +41,122 @@ model Customer {
   createdBy String?
   updatedBy String?
   deletedAt DateTime?
+  repairTickets RepairTicket[]
+}
+enum RepairStatus{
+  RECEIVED
+  DIAGNOSING
+  WAITING_FOR_PARTS
+  REPAIRING
+  COMPLETED
+  DELIVERED
+}
+enum DeviceType{
+  PHONE
+  TABLET
+  LAPTOP
+  DESKTOP
+  OTHER
+}
+model RepairTicket {
+  id            String @id @default(uuid())
+  ticketNumber    String @unique
+  customerId     String
+  customer   Customer  @relation(fields: [customerId], references: [id])
+  deviceType    DeviceType
+  deviceBrand            String
+  deviceModel            String
+  serialNumberImei       String?
+  reportedProblem        String
+  technicianNotes        String?
+  estimatedCost          Float
+  depositAmount          Float
+  status                 RepairStatus @default(RECEIVED)
+  dateReceived           DateTime     @default(now())
+  expectedCompletionDate DateTime?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  createdBy              String?
+  updatedBy              String?
+  deletedAt              DateTime?
+  media                  Media[]
+  statusHistory RepairStatusHistory[]
+  assignedTechnicianId String?
+  assignedTechnician    User?   @relation(fields: [assignedTechnicianId], references: [id])
+  repairParts RepairPart[]
+  payments Payment[]
+
+
+}
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+model Media {
+  id         String       @id @default(uuid())
+  repairId   String
+  repairTicket RepairTicket @relation(fields: [repairId], references: [id])
+  fileUrl    String
+  fileType   MediaType
+  uploadedBy String?
+  createdAt  DateTime     @default(now())
+}
+model RepairStatusHistory {
+  id           String       @id @default(uuid())
+  repairId     String
+  repairTicket RepairTicket @relation(fields: [repairId], references: [id])
+  status       RepairStatus
+  notes        String?
+  changedBy    String?
+  changedAt    DateTime     @default(now())
+}
+model SparePart{
+  id    String @id @default(uuid())
+  name  String
+  sku String @unique
+  category  String
+  quantityAvailable Int
+  lowStockThreshold Int       @default(5)
+  unitCost          Float
+  unitPrice         Float
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  createdBy         String?
+  updatedBy         String?
+  deletedAt         DateTime?
+  repairParts RepairPart[]
+
+}
+model RepairPart {
+  id             String       @id @default(uuid())
+  repairId       String
+  repairTicket   RepairTicket @relation(fields: [repairId], references: [id])
+  partId         String
+  sparePart      SparePart    @relation(fields: [partId], references: [id])
+  quantityUsed   Int
+  unitPriceAtUse Float
+  createdAt      DateTime     @default(now())
+}
+enum PaymentType {
+  DEPOSIT
+  PARTIAL
+  FINAL
+}
+
+enum PaymentMethod {
+  CASH
+  TELEBIRR
+  BANK_TRANSFER
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  repairId      String
+  repairTicket  RepairTicket  @relation(fields: [repairId], references: [id])
+  amount        Float
+  paymentType   PaymentType
+  paymentMethod PaymentMethod
+  receivedBy    String?
+  createdAt     DateTime      @default(now())
 }
