@@ -22,7 +22,7 @@ export function LoginForm() {
           type="email"
           required
           placeholder="name@company.com"
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+          className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
         />
       </div>
 
@@ -31,7 +31,7 @@ export function LoginForm() {
           <label htmlFor="password" className="block text-sm font-medium text-slate-900">
             Password
           </label>
-          <a href="#" className="text-sm text-blue-600 hover:underline">
+          <a href="#" className="text-sm text-orange-600 hover:underline">
             Forgot password?
           </a>
         </div>
@@ -41,7 +41,7 @@ export function LoginForm() {
             name="password"
             type={showPassword ? "text" : "password"}
             required
-            className="w-full rounded-md border border-slate-300 px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+            className="w-full rounded-md border border-orange-300 px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-orange-600"
           />
           <button
             type="button"
@@ -55,7 +55,7 @@ export function LoginForm() {
       </div>
 
       <label className="flex items-center gap-2 text-sm text-slate-600">
-        <input type="checkbox" name="rememberMe" className="rounded border-slate-300" />
+        <input type="checkbox" name="rememberMe" className="rounded border-orange-300" />
         Remember me
       </label>
 
@@ -64,7 +64,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="w-full rounded-md bg-blue-600 text-white py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+        className="w-full rounded-md bg-orange-600 text-white py-2 text-sm font-medium hover:bg-orange-700 disabled:opacity-50"
       >
         {isPending ? "Logging in..." : "Log In"}
       </button>

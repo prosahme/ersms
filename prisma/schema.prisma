@@ -160,3 +160,39 @@ model Payment {
   receivedBy    String?
   createdAt     DateTime      @default(now())
 }
+
+enum ReminderCategory {
+  SALARY
+  RENT
+  EKUB
+  OTHER
+}
+model Reminder {
+  id             String           @id @default(uuid())
+  title          String
+  category       ReminderCategory
+  amount         Float?
+  dueDate        DateTime
+  recurrenceDays Int?
+  isPaid         Boolean          @default(false)
+  notes          String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  createdBy      String?
+}
+
+enum NotificationType {
+  REPAIR_COMPLETED
+  NEW_CUSTOMER
+  PAYMENT_RECEIVED
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+}

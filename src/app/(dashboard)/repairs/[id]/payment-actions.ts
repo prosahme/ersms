@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { formatCurrency } from "@/lib/format-currency";
 
 const paymentSchema = z.object({
   repairId: z.string(),
@@ -21,6 +22,17 @@ export async function addPaymentAction(formData: FormData) {
 
   if (!parsed.success) return;
 
-  await prisma.payment.create({ data: parsed.data });
+  await prisma.payment.create({ data: parsed.data , include: { repairTicket: { include: { customer: true } } },
+  });
+
+     await prisma.notification.create({
+  data: {
+    type: "PAYMENT_RECEIVED",
+    title: "Payment Received",
+    message: `${formatCurrency(payment.amount)} received for Ticket ${payment.repairTicket.ticketNumber}.`,
+    link: `/repairs/${parsed.data.repairId}`,
+  },
+});
+     
   revalidatePath(`/repairs/${parsed.data.repairId}`);
 }

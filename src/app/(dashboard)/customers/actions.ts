@@ -45,6 +45,15 @@ export async function createCustomerAction(
     },
   });
 
+  await prisma.notification.create({
+  data: {
+    type: "NEW_CUSTOMER",
+    title: "New Customer",
+    message: `New customer added: ${customer.name}.`,
+    link: `/customers/${customer.id}`,
+  },
+});
+
 
   revalidatePath("/customers");
   return {};

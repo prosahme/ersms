@@ -1,10 +1,20 @@
 import {auth } from "@/auth";
 import {Search , Bell, Globe} from "lucide-react";
+import { prisma } from "@/lib/prisma";
+import Link from "next/link";
 export async function Navbar(){
     const session = await auth();
     const user = session?.user;
+
+    const [hasUnread, hasLowStock, hasOverdue, hasDueReminders] = await Promise.all([
+  prisma.notification.count({ where: { isRead: false } }).then((c) => c > 0),
+  prisma.sparePart.findMany({ where: { deletedAt: null } }).then((parts) => parts.some((p) => p.quantityAvailable <= p.lowStockThreshold)),
+  prisma.repairTicket.count({ where: { deletedAt: null, status: { notIn: ["COMPLETED", "DELIVERED"] }, expectedCompletionDate: { lt: new Date() } } }).then((c) => c > 0),
+  prisma.reminder.count({ where: { isPaid: false, dueDate: { lte: new Date() } } }).then((c) => c > 0),
+]);
+const hasAlerts = hasUnread || hasLowStock || hasOverdue || hasDueReminders;
     return(
-        <header className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-6 sticky top-0 z-10">
+        <header className="h-16 border-b border-orange-200 bg-orange-50 flex items-center justify-between px-6 sticky top-0 z-10">
             <div className="flex items-center gap-2 w-full max-w-md">
                 <Search size={18} className="text-slate-400" />
                 <input
@@ -18,19 +28,18 @@ export async function Navbar(){
     <Globe size={20} />
   </button>
 
-  <button className="relative text-slate-400 hover:text-slate-600" aria-label="Notifications">
-    <Bell size={20} />
-    <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-red-500" />
-  </button>
-
+      <Link href="/notifications" className="relative text-slate-400 hover:text-slate-600" aria-label="Notifications">
+  <Bell size={20} />
+  {hasAlerts && <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-red-500" />}
+</Link>
   <div className="flex items-center gap-2">
   <div className="text-right">
     <p className="text-sm font-medium text-slate-900">{user?.name}</p>
-    <p className="text-xs text-slate-500 capitalize">
+    <p className="text-xs text-orange-500 capitalize">
       {user?.role?.toLowerCase()}
     </p>
   </div>
-  <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-semibold">
+  <div className="h-9 w-9 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-sm font-semibold">
     {user?.name?.charAt(0) ?? "U"}
   </div>
 </div>
