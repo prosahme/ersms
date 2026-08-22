@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Users, Wrench , Package, Wallet , BarChart3, Bell ,Settings, LogOut, Calendar1} from "lucide-react";
 import Image from "next/image";
-import { LogoutAction} from "@/app/(dashboard)/dashboard/logout-action";
+import { logoutAction } from "@/app/(dashboard)/logout-action";
 const navItems = [
     {href: "/dashboard", label: "Dashboard", icon: LayoutDashboard},
     {href: "/customers", label: "Customers",icon: Users},
@@ -48,7 +48,7 @@ export function Sidebar() {
         Settings
         </Link>
 
-        <form action={LogoutAction}>
+        <form action={logoutAction}>
   <button
     type="submit"
     className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50"
