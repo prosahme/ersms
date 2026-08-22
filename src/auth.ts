@@ -16,26 +16,35 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: {},
       },
       authorize: async (credentials) => {
-        const email = credentials?.email as string | undefined;
-        const password = credentials?.password as string | undefined;
+  const email = credentials?.email as string | undefined;
+  const password = credentials?.password as string | undefined;
 
-        if (!email || !password) return null;
+  console.log("LOGIN ATTEMPT:", email, password);
 
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) return null;
-        if (!user.isActive) return null;
+  if (!email || !password) return null;
 
-        const passwordMatches = await bcrypt.compare(password, user.password);
-        if (!passwordMatches) return null;
+  const user = await prisma.user.findUnique({ where: { email } });
+  console.log("USER FOUND:", user ? user.email : "NO USER FOUND");
 
-        return {
-          id: user.id,
-          name: user.fullName,
-          email: user.email,
-          role: user.role,
-          firstLogin: user.firstLogin,
-        };
-      },
+  if (!user) return null;
+  if (!user.isActive) {
+    console.log("ACCOUNT IS DISABLED");
+    return null;
+  }
+
+  const passwordMatches = await bcrypt.compare(password, user.password);
+  console.log("PASSWORD MATCHES:", passwordMatches);
+
+  if (!passwordMatches) return null;
+
+  return {
+    id: user.id,
+    name: user.fullName,
+    email: user.email,
+    role: user.role,
+    firstLogin: user.firstLogin,
+  };
+},
     }),
   ],
   callbacks: {
