@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { toggleUserActiveAction, resetPasswordAction, updateBusinessInfoAction } from "./actions";
+import { toggleUserActiveAction,  updateBusinessInfoAction } from "./actions";
 import { NewUserForm } from "./new-user-form";
+import { ResetPasswordButton } from "./reset-password-button";
 
 export default async function SettingsPage({
   searchParams,
@@ -76,10 +77,7 @@ export default async function SettingsPage({
                           {u.isActive ? "Disable" : "Enable"}
                         </button>
                       </form>
-                      <form action={resetPasswordAction} className="inline">
-                        <input type="hidden" name="id" value={u.id} />
-                        <button type="submit" className="text-slate-600 hover:underline text-sm">Reset Password</button>
-                      </form>
+                      <ResetPasswordButton userId={u.id} />
                     </td>
                   </tr>
                 ))}

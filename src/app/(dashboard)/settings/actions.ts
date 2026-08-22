@@ -53,15 +53,23 @@ export async function toggleUserActiveAction(formData: FormData) {
   await prisma.user.update({ where: { id }, data: { isActive: !isActive } });
   revalidatePath("/settings");
 }
-export async function resetPasswordAction(formData: FormData) {
+  export type ResetPasswordState = { tempPassword?: string; email?: string };
+
+export async function resetPasswordAction(
+  _prevState: ResetPasswordState,
+  formData: FormData
+): Promise<ResetPasswordState> {
   const id = formData.get("id") as string;
   const tempPassword = Math.random().toString(36).slice(-8) + "!1";
   const hashedPassword = await bcrypt.hash(tempPassword, 10);
-  await prisma.user.update({
+
+  const user = await prisma.user.update({
     where: { id },
     data: { password: hashedPassword, firstLogin: true },
   });
+
   revalidatePath("/settings");
+  return { tempPassword, email: user.email };
 }
 
 const businessSchema = z.object({
