@@ -196,3 +196,9 @@ model Notification {
   isRead    Boolean          @default(false)
   createdAt DateTime         @default(now())
 }
+model BusinessInfo {
+  id      String  @id @default(uuid())
+  name    String
+  address String?
+  phone   String?
+}
