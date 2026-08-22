@@ -22,7 +22,7 @@ export async function addPaymentAction(formData: FormData) {
 
   if (!parsed.success) return;
 
-  await prisma.payment.create({ data: parsed.data , include: { repairTicket: { include: { customer: true } } },
+   const payment = await prisma.payment.create({ data: parsed.data , include: { repairTicket: { include: { customer: true } } },
   });
 
      await prisma.notification.create({
