@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { toggleUserActiveAction,  updateBusinessInfoAction } from "./actions";
 import { NewUserForm } from "./new-user-form";
 import { ResetPasswordButton } from "./reset-password-button";
+import { RestoreBackupForm } from "./restore-backup-form";
 
 export default async function SettingsPage({
   searchParams,
@@ -20,6 +21,8 @@ export default async function SettingsPage({
     { key: "users", label: "User Management" },
     { key: "business", label: "Business Information" },
     { key: "language", label: "Language" },
+    { key: "backup", label: "Backup & Restore" },
+
   ];
 
   return (
@@ -118,6 +121,27 @@ export default async function SettingsPage({
           </p>
         </div>
       )}
+
+      {activeTab === "backup" && (
+  <div className="bg-white border border-orange-200 rounded-lg p-4 max-w-md space-y-6">
+    <div>
+      <h2 className="font-semibold mb-2">Backup</h2>
+      <p className="text-sm text-slate-500 mb-3">
+        Download a full copy of your customers, repairs, inventory, and payments.
+      </p>
+      <a href="/api/backup" className="inline-block rounded-md bg-orange-600 text-white px-4 py-2 text-sm font-medium hover:bg-orange-700">
+        Download Backup
+      </a>
+    </div>
+    <div className="border-t border-orange-100 pt-6">
+      <h2 className="font-semibold mb-2">Restore</h2>
+      <p className="text-sm text-red-600 mb-3 font-medium">
+        Warning: restoring will permanently replace all current data with the backup file's data.
+      </p>
+      <RestoreBackupForm />
+    </div>
+  </div>
+)}
     </div>
   );
 }
