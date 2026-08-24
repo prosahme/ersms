@@ -25,7 +25,8 @@ export async function restoreBackupAction(
   }
 
   try {
-    await prisma.$transaction(async (tx) => {
+   await prisma.$transaction(
+  async (tx) => {
       await tx.media.deleteMany();
       await tx.repairStatusHistory.deleteMany();
       await tx.repairPart.deleteMany();
@@ -55,9 +56,15 @@ export async function restoreBackupAction(
       if (data.statusHistory?.length) await tx.repairStatusHistory.createMany({ data: data.statusHistory });
       if (data.reminders?.length) await tx.reminder.createMany({ data: data.reminders });
       if (data.notifications?.length) await tx.notification.createMany({ data: data.notifications });
-      if (data.businessInfo?.length) await tx.businessInfo.createMany({ data: data.businessInfo });
-    });
-  } catch {
+      
+            if (data.businessInfo?.length) await tx.businessInfo.createMany({ data: data.businessInfo });
+    },
+    { timeout: 20000  , maxWait: 20000}
+  );
+  } catch (error){
+
+
+    console.error("RESTORE ERROR:", error);
     return { error: "Restore failed. The backup file may be corrupted or incompatible." };
   }
 

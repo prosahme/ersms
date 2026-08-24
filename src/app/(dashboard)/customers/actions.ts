@@ -14,7 +14,7 @@ const customerSchema = z.object({
 
 export type CustomerFormState = { error?: string };
 
-export async function createCustomerAction(
+   export async function createCustomerAction(
   _prevState: CustomerFormState,
   formData: FormData
 ): Promise<CustomerFormState> {
@@ -36,7 +36,7 @@ export async function createCustomerAction(
     return { error: "A customer with this phone number already exists." };
   }
 
-  await prisma.customer.create({
+  const customer = await prisma.customer.create({
     data: {
       name: parsed.data.name,
       phone: parsed.data.phone,
@@ -46,14 +46,13 @@ export async function createCustomerAction(
   });
 
   await prisma.notification.create({
-  data: {
-    type: "NEW_CUSTOMER",
-    title: "New Customer",
-    message: `New customer added: ${customer.name}.`,
-    link: `/customers/${customer.id}`,
-  },
-});
-
+    data: {
+      type: "NEW_CUSTOMER",
+      title: "New Customer",
+      message: `New customer added: ${customer.name}.`,
+      link: `/customers/${customer.id}`,
+    },
+  });
 
   revalidatePath("/customers");
   return {};
