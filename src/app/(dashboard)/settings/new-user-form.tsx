@@ -10,7 +10,7 @@ export function NewUserForm() {
 
   return (
     <div>
-      <form action={formAction} className="flex items-end gap-3">
+      <form action={formAction} className="flex flex-col sm:flex-row sm:items-end gap-3">
         <div className="flex-1">
           <label className="block text-xs font-medium mb-1">Full Name</label>
           <input name="fullName" type="text" required className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm" />
@@ -21,7 +21,7 @@ export function NewUserForm() {
         </div>
         <div>
           <label className="block text-xs font-medium mb-1">Role</label>
-          <select name="role" required className="rounded-md border border-orange-300 px-3 py-2 text-sm">
+          <select name="role" required className="w-full sm:w-auto rounded-md border border-orange-300 px-3 py-2 text-sm">
             <option value="TECHNICIAN">Technician</option>
             <option value="ADMINISTRATOR">Administrator</option>
           </select>

@@ -11,7 +11,8 @@ export default async function InventoryPage() {
 
   return (
     <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+      
         <h1 className="text-2xl font-semibold">Inventory</h1>
         <Link
           href="/inventory/new"
@@ -27,9 +28,7 @@ export default async function InventoryPage() {
           return (
             <div
               key={part.id}
-              className={`bg-white border border-orange-200 rounded-lg p-4 flex items-center justify-between ${
-                isLowStock ? "border-l-4 border-l-red-500" : ""
-              }`}
+             className={`bg-white border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 ${isLowStock ? "border-l-4 border-l-red-500" : ""}`}
             >
               <div>
                 <div className="flex items-center gap-2 mb-1">

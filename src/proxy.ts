@@ -12,6 +12,7 @@ const protectedPaths = [
   "/settings",
   "/reminders",
   "/change-password",
+  "//account",
 ];
 
 const adminOnlyPaths = ["/settings", "/reports", "/reminders"];
@@ -32,9 +33,7 @@ export const proxy = auth((req) => {
     return NextResponse.redirect(new URL("/change-password", req.url));
   }
 
-  if (isLoggedIn && !firstLogin && pathname === "/change-password") {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
-  }
+  
 
   const isAdminOnly = adminOnlyPaths.some((path) => pathname.startsWith(path));
   if (isAdminOnly && role === "TECHNICIAN") {
@@ -54,5 +53,6 @@ export const config = {
     "/settings/:path*",
     "/reminders/:path*",
     "/change-password",
+    "/account/:path*",
   ],
 };

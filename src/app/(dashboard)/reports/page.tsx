@@ -69,11 +69,11 @@ export default async function ReportsPage() {
   const maxPartQty = mostUsedParts[0]?.qty ?? 1;
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <h1 className="text-2xl font-semibold mb-1">Reports</h1>
       <p className="text-slate-500 mb-6">Performance analytics overview.</p>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-white border border-orange-200 rounded-lg p-4">
           <p className="text-xs text-slate-500 mb-1">Today's Income</p>
           <p className="text-2xl font-semibold">{formatCurrency(todayIncome)}</p>
@@ -88,7 +88,7 @@ export default async function ReportsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="bg-white border border-orange-200 rounded-lg p-4">
           <h2 className="font-semibold mb-2">Daily Revenue Trend (7 Days)</h2>
           <RevenueTrendChart data={trendData} />
@@ -99,7 +99,7 @@ export default async function ReportsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white border border-orange-200 rounded-lg p-4">
           <h2 className="font-semibold mb-3">Most Common Repairs</h2>
           <div className="space-y-3">

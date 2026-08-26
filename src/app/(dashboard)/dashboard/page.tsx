@@ -89,7 +89,7 @@ const incomeChartData = Object.entries(incomeByDay).map(([day, income]) => ({ da
       <h1 className="text-2xl font-semibold mb-1">Dashboard</h1>
       <p className="text-slate-500 mb-6">Here's what's happening in your shop today.</p>
 
-      <div className="grid grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
@@ -104,7 +104,7 @@ const incomeChartData = Object.entries(incomeByDay).map(([day, income]) => ({ da
         })}
       </div>
 
-      <div className="flex gap-3 mb-6">
+      <div className="flex flex-wrap gap-3 mb-6">
         <Link href="/customers/new" className="rounded-md bg-white border border-orange-300 px-4 py-2 text-sm font-medium hover:bg-orange-50">
           + Add Customer
         </Link>
@@ -116,7 +116,7 @@ const incomeChartData = Object.entries(incomeByDay).map(([day, income]) => ({ da
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
   <div className="bg-white border border-orange-200 rounded-lg p-4">
     <h2 className="font-semibold mb-2">Income Overview (Last 7 Days)</h2>
     <IncomeChart data={incomeChartData} />
@@ -134,7 +134,8 @@ const incomeChartData = Object.entries(incomeByDay).map(([day, income]) => ({ da
         </div>
         <div className="space-y-3">
           {recentTickets.map((ticket) => (
-            <div key={ticket.id} className="flex items-center justify-between border-b border-orange-50 last:border-0 pb-3 last:pb-0">
+           
+           <div key={ticket.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 border-b border-orange-50 last:border-0 pb-3 last:pb-0">
               <div>
                 <p className="text-sm font-medium">{ticket.ticketNumber}</p>
                 <p className="text-xs text-slate-500">{ticket.customer.name} — {ticket.deviceBrand} {ticket.deviceModel}</p>

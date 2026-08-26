@@ -15,33 +15,32 @@ const initialState: RepairFormState = {};
   const [state, formAction, isPending] = useActionState(createRepairAction, initialState);
 
   return (
-    <form action={formAction} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-1">Customer</label>
-        <select name="customerId" required className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm">
-          <option value="">Select a customer</option>
-          {customers.map((customer) => (
-            <option key={customer.id} value={customer.id}>
-              {customer.name} — {customer.phone}
-            </option>
-          ))}
-        </select>
-      </div>
-     
-     <div>
-  <label className="block text-sm font-medium mb-1">Customer</label>
-  <select name="customerId" required className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm">
-    <option value="">Select a customer</option>
-    {customers.map((customer) => (
-      <option key={customer.id} value={customer.id}>
-        {customer.name} — {customer.phone}
-      </option>
-    ))}
-  </select>
-</div>
 
-<div>
-  <label className="block text-sm font-medium mb-1">Assign Technician (optional)</label>
+    <form action={formAction} className="space-y-4">
+  <div>
+    <label className="block text-sm font-medium mb-1">Customer</label>
+    <select name="customerId" required className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm">
+      <option value="">Select a customer</option>
+      {customers.map((customer) => (
+        <option key={customer.id} value={customer.id}>
+          {customer.name} — {customer.phone}
+        </option>
+      ))}
+    </select>
+  </div>
+
+  <div>
+    <label className="block text-sm font-medium mb-1">Assign Technician (optional)</label>
+    <select name="assignedTechnicianId" className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm">
+      <option value="">Unassigned</option>
+      {technicians.map((tech) => (
+        <option key={tech.id} value={tech.id}>{tech.fullName}</option>
+      ))}
+    </select>
+  </div>
+
+  <div>
+    <label className="block text-sm font-medium mb-1">Device Type</label>
   <select name="assignedTechnicianId" className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm">
     <option value="">Unassigned</option>
     {technicians.map((tech) => (

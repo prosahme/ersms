@@ -27,11 +27,11 @@ export function LoginForm() {
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex flex-col gap-0.5 mb-1">
           <label htmlFor="password" className="block text-sm font-medium text-slate-900">
             Password
           </label>
-          <a href="#" className="text-sm text-orange-600 hover:underline">
+          <a href="#" className="text-sm text-orange-600 hover:underline self-start">
             Forgot password?
           </a>
         </div>

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { toggleUserActiveAction,  updateBusinessInfoAction } from "./actions";
+import Link from "next/link";
+import { toggleUserActiveAction, updateBusinessInfoAction } from "./actions";
 import { NewUserForm } from "./new-user-form";
 import { ResetPasswordButton } from "./reset-password-button";
 import { RestoreBackupForm } from "./restore-backup-form";
@@ -22,24 +23,24 @@ export default async function SettingsPage({
     { key: "business", label: "Business Information" },
     { key: "language", label: "Language" },
     { key: "backup", label: "Backup & Restore" },
-
   ];
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <h1 className="text-2xl font-semibold mb-6">Settings</h1>
 
-      <div className="flex gap-2 mb-6 border-b border-orange-200">
+      <div className="flex flex-wrap gap-2 mb-6 border-b border-orange-200">
         {tabs.map((t) => (
+          <Link
           
-           <a key={t.key}
+            key={t.key}
             href={`/settings?tab=${t.key}`}
-            className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px ${
+            className={`px-3 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${
               activeTab === t.key ? "border-orange-600 text-orange-600" : "border-transparent text-slate-500"
             }`}
           >
             {t.label}
-          </a>
+          </Link>
         ))}
       </div>
 
@@ -50,7 +51,34 @@ export default async function SettingsPage({
             <NewUserForm />
           </div>
 
-          <div className="bg-white border border-orange-200 rounded-lg overflow-hidden">
+          {/* Mobile: stacked cards */}
+          <div className="space-y-3 md:hidden">
+            {users.map((u) => (
+              <div key={u.id} className="bg-white border border-orange-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="font-medium">{u.fullName}</p>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${u.isActive ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
+                    {u.isActive ? "Active" : "Disabled"}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-600">{u.email}</p>
+                <p className="text-sm text-slate-500 capitalize mb-3">{u.role.toLowerCase()}</p>
+                <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-orange-100">
+                  <form action={toggleUserActiveAction} className="inline">
+                    <input type="hidden" name="id" value={u.id} />
+                    <input type="hidden" name="isActive" value={String(u.isActive)} />
+                    <button type="submit" className="text-orange-600 hover:underline text-sm">
+                      {u.isActive ? "Disable" : "Enable"}
+                    </button>
+                  </form>
+                  <ResetPasswordButton userId={u.id} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: real table */}
+          <div className="hidden md:block bg-white border border-orange-200 rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-orange-50 border-b border-orange-200">
                 <tr>
@@ -123,25 +151,25 @@ export default async function SettingsPage({
       )}
 
       {activeTab === "backup" && (
-  <div className="bg-white border border-orange-200 rounded-lg p-4 max-w-md space-y-6">
-    <div>
-      <h2 className="font-semibold mb-2">Backup</h2>
-      <p className="text-sm text-slate-500 mb-3">
-        Download a full copy of your customers, repairs, inventory, and payments.
-      </p>
-      <a href="/api/backup" className="inline-block rounded-md bg-orange-600 text-white px-4 py-2 text-sm font-medium hover:bg-orange-700">
-        Download Backup
-      </a>
-    </div>
-    <div className="border-t border-orange-100 pt-6">
-      <h2 className="font-semibold mb-2">Restore</h2>
-      <p className="text-sm text-red-600 mb-3 font-medium">
-        Warning: restoring will permanently replace all current data with the backup file's data.
-      </p>
-      <RestoreBackupForm />
-    </div>
-  </div>
-)}
+        <div className="bg-white border border-orange-200 rounded-lg p-4 max-w-md space-y-6">
+          <div>
+            <h2 className="font-semibold mb-2">Backup</h2>
+            <p className="text-sm text-slate-500 mb-3">
+              Download a full copy of your customers, repairs, inventory, and payments.
+            </p>
+            <a href="/api/backup" className="inline-block rounded-md bg-orange-600 text-white px-4 py-2 text-sm font-medium hover:bg-orange-700">
+              Download Backup
+            </a>
+          </div>
+          <div className="border-t border-orange-100 pt-6">
+            <h2 className="font-semibold mb-2">Restore</h2>
+            <p className="text-sm text-red-600 mb-3 font-medium">
+              Warning: restoring will permanently replace all current data with the backup file's data.
+            </p>
+            <RestoreBackupForm />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
