@@ -4,12 +4,15 @@ import { toggleUserActiveAction, updateBusinessInfoAction } from "./actions";
 import { NewUserForm } from "./new-user-form";
 import { ResetPasswordButton } from "./reset-password-button";
 import { RestoreBackupForm } from "./restore-backup-form";
+import { getLanguage } from "@/lib/language";
+import { t } from "@/lib/translations";
 
 export default async function SettingsPage({
   searchParams,
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
+  const lang = await getLanguage();
   const { tab } = await searchParams;
   const activeTab = tab ?? "users";
 
@@ -27,7 +30,8 @@ export default async function SettingsPage({
 
   return (
     <div className="p-4 md:p-8">
-      <h1 className="text-2xl font-semibold mb-6">Settings</h1>
+      <h1 className="text-2xl font-semibold mb-6">{t("settings", lang)}
+        </h1>
 
       <div className="flex flex-wrap gap-2 mb-6 border-b border-orange-200">
         {tabs.map((t) => (
@@ -47,7 +51,7 @@ export default async function SettingsPage({
       {activeTab === "users" && (
         <div className="space-y-6">
           <div className="bg-white border border-orange-200 rounded-lg p-4">
-            <h2 className="font-semibold mb-3">Add User</h2>
+            <h2 className="font-semibold mb-3">{t("addUser", lang)}</h2>
             <NewUserForm />
           </div>
 
@@ -82,11 +86,11 @@ export default async function SettingsPage({
             <table className="w-full text-sm">
               <thead className="bg-orange-50 border-b border-orange-200">
                 <tr>
-                  <th className="text-left px-4 py-3 font-medium text-slate-500">Name</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-500">Email</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-500">Role</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-500">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-slate-500">Actions</th>
+                  <th className="text-left px-4 py-3 font-medium text-slate-500">{t("name", lang)}</th>
+                  <th className="text-left px-4 py-3 font-medium text-slate-500">{t("email", lang)}</th>
+                  <th className="text-left px-4 py-3 font-medium text-slate-500">{t("role", lang)}</th>
+                  <th className="text-left px-4 py-3 font-medium text-slate-500">{t("status", lang)}</th>
+                  <th className="text-left px-4 py-3 font-medium text-slate-500">{t("actions", lang)}</th>
                 </tr>
               </thead>
               <tbody>
@@ -120,10 +124,10 @@ export default async function SettingsPage({
 
       {activeTab === "business" && (
         <div className="bg-white border border-orange-200 rounded-lg p-4 max-w-md">
-          <h2 className="font-semibold mb-3">Business Information</h2>
+          <h2 className="font-semibold mb-3">{t("businessInformation", lang)}</h2>
           <form action={updateBusinessInfoAction} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Business Name</label>
+              <label className="block text-sm font-medium mb-1">{t("businessName", lang)}</label>
               <input name="name" type="text" required defaultValue={businessInfo?.name ?? ""} className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm" />
             </div>
             <div>
@@ -135,7 +139,7 @@ export default async function SettingsPage({
               <input name="phone" type="text" defaultValue={businessInfo?.phone ?? ""} className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm" />
             </div>
             <button type="submit" className="rounded-md bg-orange-600 text-white px-4 py-2 text-sm font-medium hover:bg-orange-700">
-              Save
+              {t("save", lang)}
             </button>
           </form>
         </div>
@@ -143,7 +147,7 @@ export default async function SettingsPage({
 
       {activeTab === "language" && (
         <div className="bg-white border border-orange-200 rounded-lg p-4 max-w-md">
-          <h2 className="font-semibold mb-3">Language</h2>
+          <h2 className="font-semibold mb-3">{t("language", lang)}</h2>
           <p className="text-sm text-slate-500">
             English / Amharic switching is coming in a follow-up update.
           </p>
@@ -153,18 +157,18 @@ export default async function SettingsPage({
       {activeTab === "backup" && (
         <div className="bg-white border border-orange-200 rounded-lg p-4 max-w-md space-y-6">
           <div>
-            <h2 className="font-semibold mb-2">Backup</h2>
+            <h2 className="font-semibold mb-2">{t("backupRestore", lang)}</h2>
             <p className="text-sm text-slate-500 mb-3">
               Download a full copy of your customers, repairs, inventory, and payments.
             </p>
             <a href="/api/backup" className="inline-block rounded-md bg-orange-600 text-white px-4 py-2 text-sm font-medium hover:bg-orange-700">
-              Download Backup
+              {t("downloadBackup", lang)}
             </a>
           </div>
           <div className="border-t border-orange-100 pt-6">
-            <h2 className="font-semibold mb-2">Restore</h2>
+            <h2 className="font-semibold mb-2">restore</h2>
             <p className="text-sm text-red-600 mb-3 font-medium">
-              Warning: restoring will permanently replace all current data with the backup file's data.
+              {t("restoreWarning", lang)}
             </p>
             <RestoreBackupForm />
           </div>

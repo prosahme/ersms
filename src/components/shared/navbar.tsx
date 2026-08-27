@@ -3,8 +3,10 @@ import { Bell, Globe } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { GlobalSearchForm } from "./global-search-form";
+import { setLanguageAction } from "@/app/(dashboard)/language-action";
+import { t } from "@/lib/translations";
 
-export async function Navbar() {
+export async function Navbar({ lang }: { lang: "en" | "am" }) {
   const session = await auth();
   const user = session?.user as any;
 
@@ -20,9 +22,15 @@ export async function Navbar() {
     <header className="h-16 border-b border-orange-200 bg-orange-50 flex items-center justify-between px-3 md:px-6 sticky top-0 z-10">
       <GlobalSearchForm />
       <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-        <button className="hidden sm:block text-slate-400 hover:text-slate-600" aria-label="Language">
-          <Globe size={20} />
-        </button>
+
+        <form action={setLanguageAction}>
+  <input type="hidden" name="lang" value={lang === "en" ? "am" : "en"} />
+  <button type="submit" className="flex items-center gap-1 text-slate-400 hover:text-slate-600 text-xs font-medium">
+    <Globe size={20} />
+    {lang === "en" ? "አማ" : "EN"}
+  </button>
+</form>
+        
 
         <Link href="/notifications" className="relative text-slate-400 hover:text-slate-600" aria-label="Notifications">
           <Bell size={20} />

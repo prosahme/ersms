@@ -8,6 +8,8 @@ import {
   Wallet,
 } from "lucide-react";
 import { markAllReadAction } from "./actions";
+import { getLanguage } from "@/lib/language";
+import { t } from "@/lib/translations";
 
 const iconMap: Record<string, any> = {
   LOW_STOCK: AlertTriangle,
@@ -42,6 +44,7 @@ export default async function NotificationsPage({
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
+  const lang = await getLanguage();
   const { tab } = await searchParams;
   const activeTab = tab ?? "all";
 
@@ -176,7 +179,7 @@ export default async function NotificationsPage({
     <div className="p-4 md:p-8">
      
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-1">
-        <h1 className="text-2xl font-semibold">
+        <h1 className="text-2xl font-semibold">{t("notifications", lang)}
           Notifications
         </h1>
 
@@ -185,7 +188,7 @@ export default async function NotificationsPage({
             type="submit"
             className="text-sm text-orange-600 hover:underline"
           >
-            Mark all as read
+           {t("markAllRead", lang)}
           </button>
         </form>
       </div>
@@ -272,7 +275,7 @@ export default async function NotificationsPage({
 
         {filtered.length === 0 && (
           <p className="text-center text-slate-500 py-8">
-            Nothing here right now.
+            {t("noResultsYet", lang)}
           </p>
         )}
       </div>

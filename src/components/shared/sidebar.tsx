@@ -5,28 +5,27 @@ import { LayoutDashboard, Users, Wrench, Package, Wallet, BarChart3, Bell, Setti
 import Image from "next/image";
 import { logoutAction } from "@/app/(dashboard)/logout-action";
 import { useSidebar } from "./sidebar-context";
+import { t } from "@/lib/translations";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/customers", label: "Customers", icon: Users },
-  { href: "/repairs", label: "Repair Tickets", icon: Wrench },
-  { href: "/inventory", label: "Inventory", icon: Package },
-  { href: "/payments", label: "Payments", icon: Wallet },
-  { href: "/reminders", label: "Reminders", icon: Calendar1, adminOnly: true },
-  { href: "/reports", label: "Reports", icon: BarChart3, adminOnly: true },
-  { href: "/notifications", label: "Notifications", icon: Bell },
+  { href: "/dashboard", key: "dashboard" as const, icon: LayoutDashboard },
+  { href: "/customers", key: "customers" as const, icon: Users },
+  { href: "/repairs", key: "repairTickets" as const, icon: Wrench },
+  { href: "/inventory", key: "inventory" as const, icon: Package },
+  { href: "/payments", key: "payments" as const, icon: Wallet },
+  { href: "/reminders", key: "reminders" as const, icon: Calendar1, adminOnly: true },
+  { href: "/reports", key: "reports" as const, icon: BarChart3, adminOnly: true },
+  { href: "/notifications", key: "notifications" as const, icon: Bell },
 ];
 
-export function Sidebar({ role }: { role?: string }) {
+export function Sidebar({ role, lang }: { role?: string; lang: "en" | "am" }) {
   const pathname = usePathname();
   const { isOpen, close } = useSidebar();
   const visibleItems = navItems.filter((item) => !item.adminOnly || role === "ADMINISTRATOR");
 
   return (
     <>
-      {isOpen && (
-        <div onClick={close} className="fixed inset-0 bg-black/30 z-30 md:hidden" />
-      )}
+      {isOpen && <div onClick={close} className="fixed inset-0 bg-black/30 z-30 md:hidden" />}
       <aside
         className={`fixed inset-y-0 left-0 z-40 w-64 bg-orange-50 border-r border-orange-200 flex flex-col transform transition-transform duration-200 md:static md:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
@@ -51,7 +50,7 @@ export function Sidebar({ role }: { role?: string }) {
                 }`}
               >
                 <Icon size={18} />
-                {item.label}
+                {t(item.key, lang)}
               </Link>
             );
           })}
@@ -67,17 +66,13 @@ export function Sidebar({ role }: { role?: string }) {
               }`}
             >
               <Settings size={18} />
-              Settings
+              {t("settings", lang)}
             </Link>
           )}
-
           <form action={logoutAction}>
-            <button
-              type="submit"
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50"
-            >
+            <button type="submit" className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50">
               <LogOut size={18} />
-              Logout
+              {t("logout", lang)}
             </button>
           </form>
         </div>
