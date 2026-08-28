@@ -76,3 +76,55 @@ export async function createRepairAction(
   revalidatePath("/repairs");
   redirect(`/repairs/${ticket.id}`);
 }
+
+export async function syncOfflineRepair(repair: {
+  customerId: string;
+  assignedTechnicianId?: string;
+  deviceType: "PHONE" | "TABLET" | "LAPTOP" | "DESKTOP" | "OTHER";
+  deviceBrand: string;
+  deviceModel: string;
+  serialNumberImei?: string;
+  reportedProblem: string;
+  estimatedCost: number;
+  depositAmount: number;
+  paymentMethod: "CASH" | "TELEBIRR" | "BANK_TRANSFER";
+}) {
+  const ticketNumber = await generateTicketNumber();
+
+  const ticket = await prisma.repairTicket.create({
+    data: {
+      ticketNumber,
+      customerId: repair.customerId,
+      assignedTechnicianId: repair.assignedTechnicianId || null,
+      deviceType: repair.deviceType,
+      deviceBrand: repair.deviceBrand,
+      deviceModel: repair.deviceModel,
+      serialNumberImei: repair.serialNumberImei || null,
+      reportedProblem: repair.reportedProblem,
+      estimatedCost: repair.estimatedCost,
+      depositAmount: repair.depositAmount,
+    },
+  });
+
+  await prisma.repairStatusHistory.create({
+    data: {
+      repairId: ticket.id,
+      status: "RECEIVED",
+    },
+  });
+
+  if (repair.depositAmount > 0) {
+    await prisma.payment.create({
+      data: {
+        repairId: ticket.id,
+        amount: repair.depositAmount,
+        paymentType: "DEPOSIT",
+        paymentMethod: repair.paymentMethod,
+      },
+    });
+  }
+
+  revalidatePath("/repairs");
+
+  return { success: true, ticketId: ticket.id };
+}

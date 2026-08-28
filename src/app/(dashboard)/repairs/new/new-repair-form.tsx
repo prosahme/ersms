@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { createRepairAction, type RepairFormState } from "../actions";
 
+
 const initialState: RepairFormState = {};
   export function NewRepairForm({
   customers,
@@ -13,6 +14,8 @@ const initialState: RepairFormState = {};
 }) {
 
   const [state, formAction, isPending] = useActionState(createRepairAction, initialState);
+
+  
 
   return (
 
@@ -38,17 +41,6 @@ const initialState: RepairFormState = {};
       ))}
     </select>
   </div>
-
-  <div>
-    <label className="block text-sm font-medium mb-1">Device Type</label>
-  <select name="assignedTechnicianId" className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm">
-    <option value="">Unassigned</option>
-    {technicians.map((tech) => (
-      <option key={tech.id} value={tech.id}>{tech.fullName}</option>
-    ))}
-  </select>
-</div>
-
 
       <div>
         <label className="block text-sm font-medium mb-1">Device Type</label>

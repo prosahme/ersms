@@ -3,10 +3,11 @@
 import { useActionState, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { loginAction, type LoginState } from "./actions";
+import { t, type Lang } from "@/lib/translations";
 
 const initialState: LoginState = {};
 
-export function LoginForm() {
+export function LoginForm({ lang }: { lang: Lang }) {
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -14,7 +15,7 @@ export function LoginForm() {
     <form action={formAction} className="space-y-4">
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-slate-900 mb-1">
-          Email Address
+          {t("emailAddress", lang)}
         </label>
         <input
           id="email"
@@ -29,10 +30,10 @@ export function LoginForm() {
       <div>
         <div className="flex flex-col gap-0.5 mb-1">
           <label htmlFor="password" className="block text-sm font-medium text-slate-900">
-            Password
+            {t("password", lang)}
           </label>
           <a href="#" className="text-sm text-orange-600 hover:underline self-start">
-            Forgot password?
+            {t("forgotPassword", lang)}
           </a>
         </div>
         <div className="relative">
@@ -56,7 +57,7 @@ export function LoginForm() {
 
       <label className="flex items-center gap-2 text-sm text-slate-600">
         <input type="checkbox" name="rememberMe" className="rounded border-orange-300" />
-        Remember me
+        {t("rememberMe", lang)}
       </label>
 
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
@@ -66,7 +67,7 @@ export function LoginForm() {
         disabled={isPending}
         className="w-full rounded-md bg-orange-600 text-white py-2 text-sm font-medium hover:bg-orange-700 disabled:opacity-50"
       >
-        {isPending ? "Logging in..." : "Log In"}
+        {isPending ? t("loggingIn", lang) : t("logIn", lang)}
       </button>
     </form>
   );
