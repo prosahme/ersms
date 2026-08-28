@@ -8,7 +8,7 @@ export async function updateStatusAction(formData: FormData) {
   const status = formData.get("status") as any;
   const notes = formData.get("notes") as string;
 
-  await prisma.repairTicket.update({
+   const updated = await prisma.repairTicket.update({
     where: { id: repairId },
     data: { status },
     include: { customer: true },
