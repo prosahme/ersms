@@ -23,7 +23,9 @@ export function NewUserForm() {
           <label className="block text-xs font-medium mb-1">Role</label>
           <select name="role" required className="w-full sm:w-auto rounded-md border border-orange-300 px-3 py-2 text-sm">
             <option value="TECHNICIAN">Technician</option>
-            <option value="ADMINISTRATOR">Administrator</option>
+            <option value="CASHIER">Cashier</option>
+            <option value="MANAGER">Manager</option>
+            <option value="ADMINISTRATOR">Owner/Administrator</option>
           </select>
         </div>
         <button type="submit" disabled={isPending} className="rounded-md bg-orange-600 text-white px-4 py-2 text-sm font-medium hover:bg-orange-700 disabled:opacity-50">

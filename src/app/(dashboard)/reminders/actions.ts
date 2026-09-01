@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/auth-guard";
 
 const reminderSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -20,6 +21,8 @@ export async function createReminderAction(
   _prevState: ReminderFormState,
   formData: FormData
 ): Promise<ReminderFormState> {
+  await requireAdmin();
+
   const parsed = reminderSchema.safeParse({
     title: formData.get("title"),
     category: formData.get("category"),
@@ -47,6 +50,8 @@ export async function createReminderAction(
 }
 
 export async function markReminderPaidAction(formData: FormData) {
+  await requireAdmin();
+
   const id = formData.get("id") as string;
 
   const reminder = await prisma.reminder.findUnique({ where: { id } });
@@ -74,6 +79,8 @@ export async function markReminderPaidAction(formData: FormData) {
 }
 
 export async function deleteReminderAction(formData: FormData) {
+  await requireAdmin();
+
   const id = formData.get("id") as string;
   await prisma.reminder.delete({ where: { id } });
   revalidatePath("/reminders");

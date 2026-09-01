@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/format-currency";
 import { getLanguage } from "@/lib/language";
 import { t } from "@/lib/translations";
+import { requireFinancialAccess, UnauthorizedError, ForbiddenError } from "@/lib/auth-guard";
+import { redirect } from "next/navigation";
 
 const typeStyles: Record<string, string> = {
   DEPOSIT: "bg-blue-100 text-blue-700",
@@ -14,6 +16,18 @@ export default async function PaymentsPage({
 }: {
   searchParams: Promise<{ method?: string }>;
 }) {
+  // Defense-in-depth: middleware also blocks non-financial roles from this
+  // route, but the page/query itself must never serve payment data to a
+  // role that shouldn't see it, even if the route were reached some other way.
+  try {
+    await requireFinancialAccess();
+  } catch (e) {
+    if (e instanceof UnauthorizedError || e instanceof ForbiddenError) {
+      redirect("/dashboard");
+    }
+    throw e;
+  }
+
   const lang = await getLanguage();
   const { method } = await searchParams;
   const methodLabels: Record<string, string> = {

@@ -3,8 +3,11 @@
 import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "@/lib/auth-guard";
 
 export async function uploadMediaAction(formData: FormData) {
+  await requireAuth();
+
   const repairId = formData.get("repairId") as string;
   const file = formData.get("file") as File;
 

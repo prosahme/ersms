@@ -4,11 +4,12 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/auth-guard";
 
 const userSchema = z.object({
   fullName: z.string().min(1, "Full name is required"),
   email: z.string().email("Invalid email format"),
-  role: z.enum(["ADMINISTRATOR", "TECHNICIAN"]),
+  role: z.enum(["ADMINISTRATOR", "MANAGER", "CASHIER", "TECHNICIAN"]),
 });
 
 
@@ -18,6 +19,8 @@ export async function createUserAction(
   _prevState: UserFormState,
   formData: FormData
 ): Promise<UserFormState> {
+  await requireAdmin();
+
   const parsed = userSchema.safeParse({
     fullName: formData.get("fullName"),
     email: formData.get("email"),
@@ -48,6 +51,8 @@ export async function createUserAction(
 }
 
 export async function toggleUserActiveAction(formData: FormData) {
+  await requireAdmin();
+
   const id = formData.get("id") as string;
   const isActive = formData.get("isActive") === "true";
   await prisma.user.update({ where: { id }, data: { isActive: !isActive } });
@@ -59,6 +64,8 @@ export async function resetPasswordAction(
   _prevState: ResetPasswordState,
   formData: FormData
 ): Promise<ResetPasswordState> {
+  await requireAdmin();
+
   const id = formData.get("id") as string;
   const tempPassword = Math.random().toString(36).slice(-8) + "!1";
   const hashedPassword = await bcrypt.hash(tempPassword, 10);
@@ -79,6 +86,8 @@ const businessSchema = z.object({
 });
 
 export async function updateBusinessInfoAction(formData: FormData) {
+  await requireAdmin();
+
   const parsed = businessSchema.safeParse({
     name: formData.get("name"),
     address: formData.get("address"),

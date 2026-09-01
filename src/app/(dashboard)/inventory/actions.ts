@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireAuth } from "@/lib/auth-guard";
 
 const partSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -21,6 +22,8 @@ export async function createPartAction(
   _prevState: PartFormState,
   formData: FormData
 ): Promise<PartFormState> {
+  await requireAuth();
+
   const parsed = partSchema.safeParse({
     name: formData.get("name"),
     sku: formData.get("sku"),
@@ -46,6 +49,8 @@ export async function updatePartAction(
   _prevState: PartFormState,
   formData: FormData
 ): Promise<PartFormState> {
+  await requireAuth();
+
   const id = formData.get("id") as string;
 
   const parsed = partSchema.safeParse({
@@ -72,6 +77,8 @@ export async function updatePartAction(
 }
 
 export async function deletePartAction(formData: FormData) {
+  await requireAuth();
+
   const id = formData.get("id") as string;
   await prisma.sparePart.update({ where: { id }, data: { deletedAt: new Date() } });
   revalidatePath("/inventory");

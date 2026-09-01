@@ -15,7 +15,14 @@ const protectedPaths = [
   "//account",
 ];
 
-const adminOnlyPaths = ["/settings", "/reports", "/reminders"];
+// Administrator-only: user management, backup/restore, shop-wide reminders.
+const adminOnlyPaths = ["/settings", "/reminders"];
+
+// Financial roles only (Owner/Administrator, Manager, Cashier): anything
+// that shows payment amounts, revenue, or profit. Technicians and any
+// other non-financial role are redirected away from these pages.
+const financialOnlyPaths = ["/payments", "/reports"];
+const FINANCIAL_ROLES = ["ADMINISTRATOR", "MANAGER", "CASHIER"];
 
 export const proxy = auth((req) => {
   const isLoggedIn = !!req.auth;
@@ -33,10 +40,13 @@ export const proxy = auth((req) => {
     return NextResponse.redirect(new URL("/change-password", req.url));
   }
 
-  
-
   const isAdminOnly = adminOnlyPaths.some((path) => pathname.startsWith(path));
-  if (isAdminOnly && role === "TECHNICIAN") {
+  if (isAdminOnly && role !== "ADMINISTRATOR") {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
+  const isFinancialOnly = financialOnlyPaths.some((path) => pathname.startsWith(path));
+  if (isFinancialOnly && !FINANCIAL_ROLES.includes(role)) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 });

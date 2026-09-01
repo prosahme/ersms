@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireAuth, UnauthorizedError } from "@/lib/auth-guard";
 
 const customerSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -18,6 +19,13 @@ export type CustomerFormState = { error?: string };
   _prevState: CustomerFormState,
   formData: FormData
 ): Promise<CustomerFormState> {
+  try {
+    await requireAuth();
+  } catch (e) {
+    if (e instanceof UnauthorizedError) return { error: e.message };
+    throw e;
+  }
+
   const parsed = customerSchema.safeParse({
     name: formData.get("name"),
     phone: formData.get("phone"),
@@ -62,6 +70,13 @@ export async function updateCustomerAction(
   _prevState: CustomerFormState,
   formData: FormData
 ): Promise<CustomerFormState> {
+  try {
+    await requireAuth();
+  } catch (e) {
+    if (e instanceof UnauthorizedError) return { error: e.message };
+    throw e;
+  }
+
   const id = formData.get("id") as string;
 
   const parsed = customerSchema.safeParse({
@@ -96,6 +111,7 @@ export async function updateCustomerAction(
   redirect(`/customers/${id}`);
 }
 export async function deleteCustomerAction(formData: FormData) {
+  await requireAuth();
   const id = formData.get("id") as string;
 
   await prisma.customer.update({

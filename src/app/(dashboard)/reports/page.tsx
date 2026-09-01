@@ -4,6 +4,8 @@ import { RevenueTrendChart } from "@/components/shared/revenue-trend-chart";
 import { RepairStatusChart } from "@/components/shared/repair-status-chart";
 import { getLanguage } from "@/lib/language";
 import { t } from "@/lib/translations";
+import { requireFinancialAccess, UnauthorizedError, ForbiddenError } from "@/lib/auth-guard";
+import { redirect } from "next/navigation";
 
 const statusColorNames: Record<string, string> = {
   DIAGNOSING: "Diagnosing",
@@ -14,6 +16,15 @@ const statusColorNames: Record<string, string> = {
 };
 
 export default async function ReportsPage() {
+  try {
+    await requireFinancialAccess();
+  } catch (e) {
+    if (e instanceof UnauthorizedError || e instanceof ForbiddenError) {
+      redirect("/dashboard");
+    }
+    throw e;
+  }
+
   const lang = await getLanguage();
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());

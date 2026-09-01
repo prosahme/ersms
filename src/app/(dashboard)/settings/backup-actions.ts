@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/auth-guard";
 
 export type RestoreState = { error?: string; success?: boolean };
 
@@ -9,6 +10,10 @@ export async function restoreBackupAction(
   _prevState: RestoreState,
   formData: FormData
 ): Promise<RestoreState> {
+  // This is a destructive, database-wide action — restrict it to
+  // Administrator only, enforced server-side, independent of the UI.
+  await requireAdmin();
+
   const file = formData.get("file") as File;
   if (!file || file.size === 0) return { error: "Please choose a backup file." };
 

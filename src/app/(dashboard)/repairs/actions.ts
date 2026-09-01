@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { generateTicketNumber } from "@/lib/generate-ticket-number";
+import { requireAuth, UnauthorizedError } from "@/lib/auth-guard";
 
 const repairSchema = z.object({
   customerId: z.string().min(1, "Customer is required"),
@@ -25,6 +26,13 @@ export async function createRepairAction(
   _prevState: RepairFormState,
   formData: FormData
 ): Promise<RepairFormState> {
+  try {
+    await requireAuth();
+  } catch (e) {
+    if (e instanceof UnauthorizedError) return { error: e.message };
+    throw e;
+  }
+
   const parsed = repairSchema.safeParse({
     customerId: formData.get("customerId"),
     assignedTechnicianId: formData.get("assignedTechnicianId"),
@@ -89,6 +97,8 @@ export async function syncOfflineRepair(repair: {
   depositAmount: number;
   paymentMethod: "CASH" | "TELEBIRR" | "BANK_TRANSFER";
 }) {
+  await requireAuth();
+
   const ticketNumber = await generateTicketNumber();
 
   const ticket = await prisma.repairTicket.create({

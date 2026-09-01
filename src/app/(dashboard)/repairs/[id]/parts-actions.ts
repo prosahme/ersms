@@ -2,8 +2,11 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "@/lib/auth-guard";
 
 export async function addPartToRepairAction(formData: FormData) {
+  await requireAuth();
+
   const repairId = formData.get("repairId") as string;
   const partId = formData.get("partId") as string;
   const quantityUsed = Number(formData.get("quantityUsed"));

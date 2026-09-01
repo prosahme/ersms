@@ -157,6 +157,8 @@ model BusinessInfo {
 
 enum Role {
   ADMINISTRATOR
+  MANAGER
+  CASHIER
   TECHNICIAN
 }
 
