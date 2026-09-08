@@ -7,10 +7,23 @@ import { redirect } from "next/navigation";
 import { generateTicketNumber } from "@/lib/generate-ticket-number";
 import { requireAuth, UnauthorizedError } from "@/lib/auth-guard";
 
+const DEVICE_TYPES = [
+  "PHONE",
+  "TABLET",
+  "LAPTOP",
+  "DESKTOP",
+  "TV",
+  "RECEIVER",
+  "AMPLIFIER",
+  "MOSQUE_MICROPHONE",
+  "SPEAKER",
+  "OTHER",
+] as const;
+
 const repairSchema = z.object({
   customerId: z.string().min(1, "Customer is required"),
   assignedTechnicianId: z.string().optional(),
-  deviceType: z.enum(["PHONE", "TABLET", "LAPTOP", "DESKTOP", "OTHER"]),
+  deviceType: z.enum(DEVICE_TYPES),
   deviceBrand: z.string().min(1, "Device brand is required"),
   deviceModel: z.string().min(1, "Device model is required"),
   serialNumberImei: z.string().optional(),
@@ -18,6 +31,7 @@ const repairSchema = z.object({
   estimatedCost: z.coerce.number().min(0, "Estimated cost must be 0 or more"),
   depositAmount: z.coerce.number().min(0, "Deposit amount must be 0 or more"),
   paymentMethod: z.enum(["CASH", "TELEBIRR", "BANK_TRANSFER"]),
+  visibility: z.enum(["NORMAL", "PRIVATE"]).optional(),
 });
 
 export type RepairFormState = { error?: string };
@@ -26,8 +40,9 @@ export async function createRepairAction(
   _prevState: RepairFormState,
   formData: FormData
 ): Promise<RepairFormState> {
+  let currentUser;
   try {
-    await requireAuth();
+    currentUser = await requireAuth();
   } catch (e) {
     if (e instanceof UnauthorizedError) return { error: e.message };
     throw e;
@@ -44,16 +59,23 @@ export async function createRepairAction(
     estimatedCost: formData.get("estimatedCost"),
     depositAmount: formData.get("depositAmount"),
     paymentMethod: formData.get("paymentMethod"),
+    visibility: formData.get("visibility") || undefined,
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
 
+  // Server-side enforcement: only an Administrator can mark a repair
+  // PRIVATE, no matter what the submitted form data says.
+  const visibility =
+    parsed.data.visibility === "PRIVATE" && currentUser.role === "ADMINISTRATOR"
+      ? "PRIVATE"
+      : "NORMAL";
+
   const ticketNumber = await generateTicketNumber();
 
   const ticket = await prisma.repairTicket.create({
-    
     data: {
       ticketNumber,
       customerId: parsed.data.customerId,
@@ -65,6 +87,7 @@ export async function createRepairAction(
       reportedProblem: parsed.data.reportedProblem,
       estimatedCost: parsed.data.estimatedCost,
       depositAmount: parsed.data.depositAmount,
+      visibility,
     },
   });
   await prisma.repairStatusHistory.create({
@@ -88,7 +111,7 @@ export async function createRepairAction(
 export async function syncOfflineRepair(repair: {
   customerId: string;
   assignedTechnicianId?: string;
-  deviceType: "PHONE" | "TABLET" | "LAPTOP" | "DESKTOP" | "OTHER";
+  deviceType: (typeof DEVICE_TYPES)[number];
   deviceBrand: string;
   deviceModel: string;
   serialNumberImei?: string;

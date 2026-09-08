@@ -56,7 +56,8 @@ model RepairTicket {
   updatedBy              String?
   deletedAt              DateTime?
   deviceType             DeviceType
-  assignedTechnicianId   String?
+visibility              RepairVisibility    @default(NORMAL)
+assignedTechnicianId   String?
   media                  Media[]
   payments               Payment[]
   repairParts            RepairPart[]
@@ -176,7 +177,17 @@ enum DeviceType {
   TABLET
   LAPTOP
   DESKTOP
+  TV
+  RECEIVER
+  AMPLIFIER
+  MOSQUE_MICROPHONE
+   SPEAKER
   OTHER
+}
+
+enum RepairVisibility {
+ NORMAL
+ PRIVATE
 }
 
 enum MediaType {

@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 
 export type AppRole = "ADMINISTRATOR" | "MANAGER" | "CASHIER" | "TECHNICIAN";
 
@@ -79,4 +80,27 @@ export async function requireAdmin(): Promise<SessionUser> {
 /** True if the given role can see financial information. Useful in page/UI code too. */
 export function canSeeFinancials(role: AppRole | undefined | null): boolean {
   return !!role && FINANCIAL_ROLES.includes(role);
+}
+
+/**
+ * Ensures the current user is allowed to view/modify a specific repair
+ * ticket. A repair marked PRIVATE (owner-only) is only accessible to an
+ * Administrator — this is checked here so every action that touches a
+ * repair (status change, payment, upload, parts) enforces it, not just
+ * the detail page. Throws ForbiddenError (as notFound-style: existence
+ * of the ticket is not confirmed to unauthorized users by the caller).
+ */
+export async function assertRepairAccess(repairId: string): Promise<SessionUser> {
+  const user = await requireAuth();
+
+  const ticket = await prisma.repairTicket.findUnique({
+    where: { id: repairId },
+    select: { visibility: true },
+  });
+
+  if (ticket?.visibility === "PRIVATE" && user.role !== "ADMINISTRATOR") {
+    throw new ForbiddenError("This repair is private.");
+  }
+
+  return user;
 }
