@@ -6,6 +6,7 @@ import { updateStatusAction } from "./status-actions";
 import { addPartToRepairAction } from "./parts-actions";
 import { formatCurrency } from "@/lib/format-currency";
 import { addPaymentAction } from "./payment-actions";
+import { requireAuth, canSeeFinancials } from "@/lib/auth-guard";
 
 const statusLabels: Record<string, string> = {
   RECEIVED: "Received",
@@ -16,12 +17,20 @@ const statusLabels: Record<string, string> = {
   DELIVERED: "Delivered",
 };
 
+const paymentTypeLabels: Record<string, string> = {
+  DEPOSIT: "Deposit",
+  PARTIAL: "Partial Payment",
+  FINAL: "Final Payment",
+};
+
 export default async function RepairDetailsPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const currentUser = await requireAuth();
+  const isFinancial = canSeeFinancials(currentUser.role);
 
   const ticket = await prisma.repairTicket.findUnique({
     where: { id },
@@ -31,7 +40,10 @@ export default async function RepairDetailsPage({
       statusHistory: { orderBy: { changedAt: "asc" } },
       assignedTechnician: true,
       repairParts: { include: { sparePart: true } },
-      payments: true,
+      // Payment records are only fetched at all for financial roles — a
+      // Technician's request never pulls payment data into memory, let
+      // alone renders it, so there's nothing to accidentally leak.
+      payments: isFinancial,
     },
   });
 
@@ -217,86 +229,88 @@ export default async function RepairDetailsPage({
         </form>
       </div>
 
-      <div className="bg-white border border-orange-200 rounded-lg p-4">
-        <h2 className="font-semibold text-orange-500 text-xs uppercase tracking-wide mb-3">Payments</h2>
+      {isFinancial && (
+        <div className="bg-white border border-orange-200 rounded-lg p-4">
+          <h2 className="font-semibold text-orange-500 text-xs uppercase tracking-wide mb-3">Payments</h2>
 
-        <p className="text-sm text-slate-600 mb-1">Estimated Cost: {formatCurrency(ticket.estimatedCost)}</p>
-        {(() => {
-          const totalPaid = ticket.payments.reduce((sum, p) => sum + p.amount, 0);
-          const balance = ticket.estimatedCost - totalPaid;
-          return (
-            <>
-              <p className="text-sm text-slate-600 mb-3">Total Paid: {formatCurrency(totalPaid)}</p>
-              <p className={`text-sm font-semibold mb-4 ${balance > 0 ? "text-red-600" : "text-green-600"}`}>
-                {balance > 0 ? `Remaining Balance: ${formatCurrency(balance)}` : "Paid in Full"}
-              </p>
-            </>
-          );
-        })()}
+          <p className="text-sm text-slate-600 mb-1">Repair Price: {formatCurrency(ticket.estimatedCost)}</p>
+          {(() => {
+            const totalPaid = (ticket.payments ?? []).reduce((sum, p) => sum + p.amount, 0);
+            const balance = ticket.estimatedCost - totalPaid;
+            return (
+              <>
+                <p className="text-sm text-slate-600 mb-3">Total Paid (Deposits + Payments): {formatCurrency(totalPaid)}</p>
+                <p className={`text-sm font-semibold mb-4 ${balance > 0 ? "text-red-600" : "text-green-600"}`}>
+                  {balance > 0 ? `Remaining Balance: ${formatCurrency(balance)}` : "Fully Paid"}
+                </p>
+              </>
+            );
+          })()}
 
-        {ticket.payments.length > 0 && (
-          <div className="space-y-2 mb-4 md:hidden">
-            {ticket.payments.map((p) => (
-              <div key={p.id} className="flex items-center justify-between text-sm border-b border-orange-50 pb-2 last:border-0">
-                <div>
-                  <p>{p.paymentType} — {p.paymentMethod}</p>
-                  <p className="text-slate-500 text-xs">{p.createdAt.toLocaleDateString()}</p>
+          {(ticket.payments?.length ?? 0) > 0 && (
+            <div className="space-y-2 mb-4 md:hidden">
+              {ticket.payments!.map((p) => (
+                <div key={p.id} className="flex items-center justify-between text-sm border-b border-orange-50 pb-2 last:border-0">
+                  <div>
+                    <p>{paymentTypeLabels[p.paymentType] ?? p.paymentType} — {p.paymentMethod}</p>
+                    <p className="text-slate-500 text-xs">{p.createdAt.toLocaleDateString()}</p>
+                  </div>
+                  <p className="font-medium">{formatCurrency(p.amount)}</p>
                 </div>
-                <p className="font-medium">{formatCurrency(p.amount)}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {ticket.payments.length > 0 && (
-          <table className="w-full text-sm mb-4 hidden md:table">
-            <thead>
-              <tr className="text-left text-slate-500 border-b border-orange-100">
-                <th className="py-2 font-medium">Type</th>
-                <th className="py-2 font-medium">Method</th>
-                <th className="py-2 font-medium">Amount</th>
-                <th className="py-2 font-medium">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ticket.payments.map((p) => (
-                <tr key={p.id} className="border-b border-orange-50 last:border-0">
-                  <td className="py-2">{p.paymentType}</td>
-                  <td className="py-2">{p.paymentMethod}</td>
-                  <td className="py-2">{formatCurrency(p.amount)}</td>
-                  <td className="py-2 text-slate-500">{p.createdAt.toLocaleDateString()}</td>
-                </tr>
               ))}
-            </tbody>
-          </table>
-        )}
+            </div>
+          )}
 
-        <form action={addPaymentAction} className="flex flex-col sm:flex-row sm:items-end gap-3">
-          <input type="hidden" name="repairId" value={ticket.id} />
-          <div>
-            <label className="block text-xs font-medium mb-1">Type</label>
-            <select name="paymentType" required className="w-full sm:w-auto rounded-md border border-orange-300 px-3 py-2 text-sm">
-              <option value="PARTIAL">Partial</option>
-              <option value="FINAL">Final</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1">Method</label>
-            <select name="paymentMethod" required className="w-full sm:w-auto rounded-md border border-orange-300 px-3 py-2 text-sm">
-              <option value="CASH">Cash</option>
-              <option value="TELEBIRR">Telebirr</option>
-              <option value="BANK_TRANSFER">Bank Transfer</option>
-            </select>
-          </div>
-          <div className="sm:w-32">
-            <label className="block text-xs font-medium mb-1">Amount</label>
-            <input name="amount" type="number" step="0.01" required className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm" />
-          </div>
-          <button type="submit" className="rounded-md bg-orange-600 text-white px-4 py-2 text-sm font-medium hover:bg-orange-700">
-            Add Payment
-          </button>
-        </form>
-      </div>
+          {(ticket.payments?.length ?? 0) > 0 && (
+            <table className="w-full text-sm mb-4 hidden md:table">
+              <thead>
+                <tr className="text-left text-slate-500 border-b border-orange-100">
+                  <th className="py-2 font-medium">Type</th>
+                  <th className="py-2 font-medium">Method</th>
+                  <th className="py-2 font-medium">Amount</th>
+                  <th className="py-2 font-medium">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ticket.payments!.map((p) => (
+                  <tr key={p.id} className="border-b border-orange-50 last:border-0">
+                    <td className="py-2">{paymentTypeLabels[p.paymentType] ?? p.paymentType}</td>
+                    <td className="py-2">{p.paymentMethod}</td>
+                    <td className="py-2">{formatCurrency(p.amount)}</td>
+                    <td className="py-2 text-slate-500">{p.createdAt.toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          <form action={addPaymentAction} className="flex flex-col sm:flex-row sm:items-end gap-3">
+            <input type="hidden" name="repairId" value={ticket.id} />
+            <div>
+              <label className="block text-xs font-medium mb-1">Type</label>
+              <select name="paymentType" required className="w-full sm:w-auto rounded-md border border-orange-300 px-3 py-2 text-sm">
+                <option value="PARTIAL">Partial Payment</option>
+                <option value="FINAL">Final Payment</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1">Method</label>
+              <select name="paymentMethod" required className="w-full sm:w-auto rounded-md border border-orange-300 px-3 py-2 text-sm">
+                <option value="CASH">Cash</option>
+                <option value="TELEBIRR">Telebirr</option>
+                <option value="BANK_TRANSFER">Bank Transfer</option>
+              </select>
+            </div>
+            <div className="sm:w-32">
+              <label className="block text-xs font-medium mb-1">Amount</label>
+              <input name="amount" type="number" step="0.01" required className="w-full rounded-md border border-orange-300 px-3 py-2 text-sm" />
+            </div>
+            <button type="submit" className="rounded-md bg-orange-600 text-white px-4 py-2 text-sm font-medium hover:bg-orange-700">
+              Add Payment
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

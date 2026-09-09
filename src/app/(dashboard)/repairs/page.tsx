@@ -3,6 +3,7 @@ import Link from "next/link";
 import { formatCurrency } from "@/lib/format-currency";
 import { getLanguage } from "@/lib/language";
 import { t } from "@/lib/translations";
+import { requireAuth, canSeeFinancials } from "@/lib/auth-guard";
 
 const statusStyles: Record<string, string> = {
   RECEIVED: "bg-slate-100 text-slate-700",
@@ -28,6 +29,8 @@ export default async function RepairsPage({
   searchParams: Promise<{ search?: string; status?: string; technicianId?: string }>;
 }) {
   const lang = await getLanguage();
+  const currentUser = await requireAuth();
+  const isFinancial = canSeeFinancials(currentUser.role);
   const { search, status, technicianId } = await searchParams;
 
   const where: any = { deletedAt: null };
@@ -79,7 +82,11 @@ export default async function RepairsPage({
             <p className="text-sm text-slate-600">{ticket.customer.name}</p>
             <p className="text-sm text-slate-500 mb-2">{ticket.deviceBrand} {ticket.deviceModel}</p>
             <div className="flex items-center justify-between text-sm border-t border-orange-100 pt-2">
-              <span className="text-slate-500">{t("estCost", lang)}: {formatCurrency(ticket.estimatedCost)}</span>
+              {isFinancial ? (
+                <span className="text-slate-500">{t("estCost", lang)}: {formatCurrency(ticket.estimatedCost)}</span>
+              ) : (
+                <span className="text-slate-500">{ticket.deviceType.replace(/_/g, " ")}</span>
+              )}
               <span className="text-slate-500">{ticket.dateReceived.toLocaleDateString()}</span>
             </div>
           </Link>
@@ -95,8 +102,12 @@ export default async function RepairsPage({
               <th className="text-left px-4 py-3 font-medium text-orange-500">{t("customer", lang)}</th>
               <th className="text-left px-4 py-3 font-medium text-orange-500">{t("device", lang)}</th>
               <th className="text-left px-4 py-3 font-medium text-orange-500">{t("status", lang)}</th>
-              <th className="text-left px-4 py-3 font-medium text-orange-500">{t("estCost", lang)}</th>
-              <th className="text-left px-4 py-3 font-medium text-orange-500">{t("balance", lang)}</th>
+              {isFinancial && (
+                <>
+                  <th className="text-left px-4 py-3 font-medium text-orange-500">{t("estCost", lang)}</th>
+                  <th className="text-left px-4 py-3 font-medium text-orange-500">{t("balance", lang)}</th>
+                </>
+              )}
               <th className="text-left px-4 py-3 font-medium text-orange-500">{t("received", lang)}</th>
               <th className="text-left px-4 py-3 font-medium text-orange-500">{t("actions", lang)}</th>
             </tr>
@@ -108,8 +119,12 @@ export default async function RepairsPage({
                 <td className="px-4 py-3">{ticket.customer.name}</td>
                 <td className="px-4 py-3 text-slate-600">{ticket.deviceBrand} {ticket.deviceModel}</td>
                 <td className="px-4 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${statusStyles[ticket.status]}`}>{statusLabels[ticket.status]}</span></td>
-                <td className="px-4 py-3 text-slate-600">{formatCurrency(ticket.estimatedCost)}</td>
-                <td className="px-4 py-3 text-slate-600">{formatCurrency(ticket.estimatedCost - ticket.depositAmount)}</td>
+                {isFinancial && (
+                  <>
+                    <td className="px-4 py-3 text-slate-600">{formatCurrency(ticket.estimatedCost)}</td>
+                    <td className="px-4 py-3 text-slate-600">{formatCurrency(ticket.estimatedCost - ticket.depositAmount)}</td>
+                  </>
+                )}
                 <td className="px-4 py-3 text-slate-600">{ticket.dateReceived.toLocaleDateString()}</td>
                 <td className="px-4 py-3"><Link href={`/repairs/${ticket.id}`} className="text-orange-600 hover:underline text-sm">{t("viewProfile", lang)}</Link></td>
               </tr>

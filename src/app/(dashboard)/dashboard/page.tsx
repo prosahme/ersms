@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/format-currency";
-import { Users, Wrench, CheckCircle2, Wallet, AlertTriangle } from "lucide-react";
+import { Users, Wrench, CheckCircle2, Wallet, AlertTriangle, ClipboardList, PackageCheck } from "lucide-react";
 import { RepairStatusChart } from "@/components/shared/repair-status-chart";
 import { IncomeChart } from "@/components/shared/income-chart";
 import { getLanguage } from "@/lib/language";
 import { t } from "@/lib/translations";
+import { requireAuth, canSeeFinancials } from "@/lib/auth-guard";
 
 const statusStyles: Record<string, string> = {
   RECEIVED: "bg-slate-100 text-slate-700",
@@ -18,17 +19,29 @@ const statusStyles: Record<string, string> = {
 
 export default async function DashboardPage() {
   const lang = await getLanguage();
+  const currentUser = await requireAuth();
+  const isFinancial = canSeeFinancials(currentUser.role);
+
   const today = new Date();
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-  const [totalCustomers, repairsInProgress, completedTickets, todaysPayments, lowStockParts, recentTickets] =
+  const [totalCustomers, repairsInProgress, completedTickets, lowStockParts, recentTickets] =
     await Promise.all([
       prisma.customer.count({ where: { deletedAt: null } }),
       prisma.repairTicket.count({ where: { deletedAt: null, status: { in: ["DIAGNOSING", "WAITING_FOR_PARTS", "REPAIRING"] } } }),
       prisma.repairTicket.count({ where: { deletedAt: null, status: "COMPLETED" } }),
-      prisma.payment.findMany({ where: { createdAt: { gte: startOfToday } } }),
       prisma.sparePart.findMany({ where: { deletedAt: null } }),
-      prisma.repairTicket.findMany({ where: { deletedAt: null }, include: { customer: true }, orderBy: { createdAt: "desc" }, take: 5 }),
+      prisma.repairTicket.findMany({
+        where: {
+          deletedAt: null,
+          // Private (owner-only) repairs never appear on a non-Administrator's
+          // dashboard, same server-side rule as the repairs list.
+          ...(currentUser.role !== "ADMINISTRATOR" ? { visibility: "NORMAL" } : {}),
+        },
+        include: { customer: true },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      }),
     ]);
 
   const statusCounts = await prisma.repairTicket.groupBy({ by: ["status"], where: { deletedAt: null }, _count: true });
@@ -36,32 +49,66 @@ export default async function DashboardPage() {
     .filter((s) => ["DIAGNOSING", "WAITING_FOR_PARTS", "REPAIRING", "COMPLETED"].includes(s.status))
     .map((s) => ({ name: s.status.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()), value: s._count }));
 
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-  const recentPayments = await prisma.payment.findMany({ where: { createdAt: { gte: sevenDaysAgo } } });
-
-  const incomeByDay: Record<string, number> = {};
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    incomeByDay[d.toLocaleDateString("en-US", { weekday: "short" })] = 0;
-  }
-  recentPayments.forEach((p) => {
-    const label = p.createdAt.toLocaleDateString("en-US", { weekday: "short" });
-    if (label in incomeByDay) incomeByDay[label] += p.amount;
-  });
-  const incomeChartData = Object.entries(incomeByDay).map(([day, income]) => ({ day, income }));
-
-  const todaysIncome = todaysPayments.reduce((sum, p) => sum + p.amount, 0);
   const lowStockCount = lowStockParts.filter((p) => p.quantityAvailable <= p.lowStockThreshold).length;
 
-  const stats = [
-    { label: t("totalCustomers", lang), value: totalCustomers, icon: Users, color: "bg-orange-100 text-orange-600" },
-    { label: t("repairsInProgress", lang), value: repairsInProgress, icon: Wrench, color: "bg-purple-100 text-purple-600" },
-    { label: t("completedRepairs", lang), value: completedTickets, icon: CheckCircle2, color: "bg-green-100 text-green-600" },
-    { label: t("todaysIncome", lang), value: formatCurrency(todaysIncome), icon: Wallet, color: "bg-blue-100 text-blue-600" },
-    { label: t("lowStockItems", lang), value: lowStockCount, icon: AlertTriangle, color: "bg-red-100 text-red-600" },
-  ];
+  // Financial figures (today's income, the 7-day income chart) are only
+  // queried at all when the current user is allowed to see them — a
+  // Technician's dashboard never even fetches payment data, not just
+  // hides it in the UI.
+  let todaysIncome = 0;
+  let incomeChartData: { day: string; income: number }[] = [];
+  if (isFinancial) {
+    const todaysPayments = await prisma.payment.findMany({ where: { createdAt: { gte: startOfToday } } });
+    todaysIncome = todaysPayments.reduce((sum, p) => sum + p.amount, 0);
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    const recentPayments = await prisma.payment.findMany({ where: { createdAt: { gte: sevenDaysAgo } } });
+
+    const incomeByDay: Record<string, number> = {};
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      incomeByDay[d.toLocaleDateString("en-US", { weekday: "short" })] = 0;
+    }
+    recentPayments.forEach((p) => {
+      const label = p.createdAt.toLocaleDateString("en-US", { weekday: "short" });
+      if (label in incomeByDay) incomeByDay[label] += p.amount;
+    });
+    incomeChartData = Object.entries(incomeByDay).map(([day, income]) => ({ day, income }));
+  }
+
+  // Operational figures shown to non-financial staff (Technicians) instead
+  // of revenue. Also handy context for financial roles, but the stat cards
+  // below only show one or the other to keep the row readable.
+  let myAssignedCount = 0;
+  let pendingCount = 0;
+  let readyCount = 0;
+  if (!isFinancial) {
+    [myAssignedCount, pendingCount, readyCount] = await Promise.all([
+      prisma.repairTicket.count({
+        where: { deletedAt: null, assignedTechnicianId: currentUser.id, status: { notIn: ["DELIVERED"] } },
+      }),
+      prisma.repairTicket.count({ where: { deletedAt: null, status: "RECEIVED" } }),
+      prisma.repairTicket.count({ where: { deletedAt: null, status: "COMPLETED" } }),
+    ]);
+  }
+
+  const stats = isFinancial
+    ? [
+        { label: t("totalCustomers", lang), value: totalCustomers, icon: Users, color: "bg-orange-100 text-orange-600" },
+        { label: t("repairsInProgress", lang), value: repairsInProgress, icon: Wrench, color: "bg-purple-100 text-purple-600" },
+        { label: t("completedRepairs", lang), value: completedTickets, icon: CheckCircle2, color: "bg-green-100 text-green-600" },
+        { label: t("todaysIncome", lang), value: formatCurrency(todaysIncome), icon: Wallet, color: "bg-blue-100 text-blue-600" },
+        { label: t("lowStockItems", lang), value: lowStockCount, icon: AlertTriangle, color: "bg-red-100 text-red-600" },
+      ]
+    : [
+        { label: t("myAssignedRepairs", lang), value: myAssignedCount, icon: ClipboardList, color: "bg-blue-100 text-blue-600" },
+        { label: t("pendingRepairs", lang), value: pendingCount, icon: Wrench, color: "bg-purple-100 text-purple-600" },
+        { label: t("repairsInProgress", lang), value: repairsInProgress, icon: Wrench, color: "bg-orange-100 text-orange-600" },
+        { label: t("readyForPickup", lang), value: readyCount, icon: PackageCheck, color: "bg-green-100 text-green-600" },
+        { label: t("lowStockItems", lang), value: lowStockCount, icon: AlertTriangle, color: "bg-red-100 text-red-600" },
+      ];
 
   return (
     <div className="p-4 md:p-8">
@@ -95,11 +142,13 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="bg-white border border-orange-200 rounded-lg p-4">
-          <h2 className="font-semibold mb-2">{t("incomeOverview", lang)}</h2>
-          <IncomeChart data={incomeChartData} />
-        </div>
+      <div className={`grid grid-cols-1 ${isFinancial ? "md:grid-cols-2" : ""} gap-4 mb-6`}>
+        {isFinancial && (
+          <div className="bg-white border border-orange-200 rounded-lg p-4">
+            <h2 className="font-semibold mb-2">{t("incomeOverview", lang)}</h2>
+            <IncomeChart data={incomeChartData} />
+          </div>
+        )}
         <div className="bg-white border border-orange-200 rounded-lg p-4">
           <h2 className="font-semibold mb-2">{t("repairStatus", lang)}</h2>
           <RepairStatusChart data={statusChartData} />
