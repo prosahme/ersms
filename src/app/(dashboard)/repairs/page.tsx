@@ -4,6 +4,7 @@ import { formatCurrency } from "@/lib/format-currency";
 import { getLanguage } from "@/lib/language";
 import { t } from "@/lib/translations";
 import { requireAuth, canSeeFinancials } from "@/lib/auth-guard";
+import { getOverdueCategory, overdueCategoryLabels, overdueCategoryStyles, overdueCutoffDate, TRACKABLE_STATUSES } from "@/lib/overdue";
 
 const statusStyles: Record<string, string> = {
   RECEIVED: "bg-slate-100 text-slate-700",
@@ -26,14 +27,22 @@ const statusLabels: Record<string, string> = {
 export default async function RepairsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; status?: string; technicianId?: string }>;
+  searchParams: Promise<{ search?: string; status?: string; technicianId?: string; overdue?: string }>;
 }) {
   const lang = await getLanguage();
   const currentUser = await requireAuth();
   const isFinancial = canSeeFinancials(currentUser.role);
-  const { search, status, technicianId } = await searchParams;
+  const { search, status, technicianId, overdue } = await searchParams;
 
   const where: any = { deletedAt: null };
+  // Private (owner-only) repairs are excluded from this query for anyone
+  // who isn't an Administrator — server-side, not just hidden in the UI.
+  // This was missing from the original Day 2 rollout; adding it here
+  // because Day 4's overdue detection must not surface private repairs
+  // to unauthorized staff, and this is the query that feeds it.
+  if (currentUser.role !== "ADMINISTRATOR") {
+    where.visibility = "NORMAL";
+  }
   if (search) {
     where.OR = [
       { ticketNumber: { contains: search, mode: "insensitive" } },
@@ -42,6 +51,13 @@ export default async function RepairsPage({
   }
   if (status) where.status = status;
   if (technicianId) where.assignedTechnicianId = technicianId;
+  if (overdue === "1") {
+    // Data-driven filter, not a client-side label: only tickets whose
+    // status is still trackable AND whose intake date is at or before
+    // the 30-day cutoff are returned at all.
+    where.status = { in: [...TRACKABLE_STATUSES] };
+    where.dateReceived = { lte: overdueCutoffDate() };
+  }
 
   const tickets = await prisma.repairTicket.findMany({ where, include: { customer: true }, orderBy: { createdAt: "desc" } });
   const technicians = await prisma.user.findMany({ where: { isActive: true } });
@@ -50,9 +66,21 @@ export default async function RepairsPage({
     <div className="p-4 md:p-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <h1 className="text-2xl font-semibold">{t("repairTickets", lang)}</h1>
-        <Link href="/repairs/new" className="rounded-md bg-orange-600 text-white px-4 py-2 text-sm font-medium hover:bg-orange-700 text-center">
-          {t("createRepair", lang)}
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href={overdue === "1" ? "/repairs" : "/repairs?overdue=1"}
+            className={`rounded-md px-4 py-2 text-sm font-medium text-center border ${
+              overdue === "1"
+                ? "bg-red-600 text-white border-red-600 hover:bg-red-700"
+                : "bg-white text-red-600 border-red-300 hover:bg-red-50"
+            }`}
+          >
+            {overdue === "1" ? "Showing Overdue Only ✕" : "Overdue / Forgotten"}
+          </Link>
+          <Link href="/repairs/new" className="rounded-md bg-orange-600 text-white px-4 py-2 text-sm font-medium hover:bg-orange-700 text-center">
+            {t("createRepair", lang)}
+          </Link>
+        </div>
       </div>
 
       <form className="flex flex-wrap gap-3 mb-4">
@@ -73,12 +101,19 @@ export default async function RepairsPage({
       </form>
 
       <div className="space-y-3 md:hidden">
-        {tickets.map((ticket) => (
+        {tickets.map((ticket) => {
+          const overdueCategory = getOverdueCategory(ticket.status, ticket.dateReceived);
+          return (
           <Link key={ticket.id} href={`/repairs/${ticket.id}`} className="block bg-white border border-orange-200 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="font-medium">{ticket.ticketNumber}</span>
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusStyles[ticket.status]}`}>{statusLabels[ticket.status]}</span>
             </div>
+            {(overdueCategory === "OVERDUE" || overdueCategory === "NEEDS_ATTENTION") && (
+              <span className={`inline-block mb-2 px-2 py-0.5 rounded-full text-xs font-medium ${overdueCategoryStyles[overdueCategory]}`}>
+                {overdueCategoryLabels[overdueCategory]}
+              </span>
+            )}
             <p className="text-sm text-slate-600">{ticket.customer.name}</p>
             <p className="text-sm text-slate-500 mb-2">{ticket.deviceBrand} {ticket.deviceModel}</p>
             <div className="flex items-center justify-between text-sm border-t border-orange-100 pt-2">
@@ -90,7 +125,8 @@ export default async function RepairsPage({
               <span className="text-slate-500">{ticket.dateReceived.toLocaleDateString()}</span>
             </div>
           </Link>
-        ))}
+          );
+        })}
         {tickets.length === 0 && <p className="text-center text-orange-500 py-8">{t("noResultsYet", lang)}</p>}
       </div>
 
@@ -102,6 +138,7 @@ export default async function RepairsPage({
               <th className="text-left px-4 py-3 font-medium text-orange-500">{t("customer", lang)}</th>
               <th className="text-left px-4 py-3 font-medium text-orange-500">{t("device", lang)}</th>
               <th className="text-left px-4 py-3 font-medium text-orange-500">{t("status", lang)}</th>
+              <th className="text-left px-4 py-3 font-medium text-orange-500">Attention</th>
               {isFinancial && (
                 <>
                   <th className="text-left px-4 py-3 font-medium text-orange-500">{t("estCost", lang)}</th>
@@ -113,12 +150,21 @@ export default async function RepairsPage({
             </tr>
           </thead>
           <tbody>
-            {tickets.map((ticket) => (
+            {tickets.map((ticket) => {
+              const overdueCategory = getOverdueCategory(ticket.status, ticket.dateReceived);
+              return (
               <tr key={ticket.id} className="border-b border-slate-100 last:border-0">
                 <td className="px-4 py-3 font-medium">{ticket.ticketNumber}</td>
                 <td className="px-4 py-3">{ticket.customer.name}</td>
                 <td className="px-4 py-3 text-slate-600">{ticket.deviceBrand} {ticket.deviceModel}</td>
                 <td className="px-4 py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${statusStyles[ticket.status]}`}>{statusLabels[ticket.status]}</span></td>
+                <td className="px-4 py-3">
+                  {(overdueCategory === "OVERDUE" || overdueCategory === "NEEDS_ATTENTION") && (
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${overdueCategoryStyles[overdueCategory]}`}>
+                      {overdueCategoryLabels[overdueCategory]}
+                    </span>
+                  )}
+                </td>
                 {isFinancial && (
                   <>
                     <td className="px-4 py-3 text-slate-600">{formatCurrency(ticket.estimatedCost)}</td>
@@ -128,7 +174,8 @@ export default async function RepairsPage({
                 <td className="px-4 py-3 text-slate-600">{ticket.dateReceived.toLocaleDateString()}</td>
                 <td className="px-4 py-3"><Link href={`/repairs/${ticket.id}`} className="text-orange-600 hover:underline text-sm">{t("viewProfile", lang)}</Link></td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
         {tickets.length === 0 && <p className="text-center text-orange-500 py-8">{t("noResultsYet", lang)}</p>}

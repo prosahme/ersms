@@ -1,12 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/format-currency";
-import { Users, Wrench, CheckCircle2, Wallet, AlertTriangle, ClipboardList, PackageCheck } from "lucide-react";
+import { Users, Wrench, CheckCircle2, Wallet, AlertTriangle, ClipboardList, PackageCheck, Clock } from "lucide-react";
 import { RepairStatusChart } from "@/components/shared/repair-status-chart";
 import { IncomeChart } from "@/components/shared/income-chart";
 import { getLanguage } from "@/lib/language";
 import { t } from "@/lib/translations";
 import { requireAuth, canSeeFinancials } from "@/lib/auth-guard";
+import { overdueCutoffDate, TRACKABLE_STATUSES } from "@/lib/overdue";
 
 const statusStyles: Record<string, string> = {
   RECEIVED: "bg-slate-100 text-slate-700",
@@ -25,7 +26,7 @@ export default async function DashboardPage() {
   const today = new Date();
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-  const [totalCustomers, repairsInProgress, completedTickets, lowStockParts, recentTickets] =
+  const [totalCustomers, repairsInProgress, completedTickets, lowStockParts, recentTickets, overdueCount] =
     await Promise.all([
       prisma.customer.count({ where: { deletedAt: null } }),
       prisma.repairTicket.count({ where: { deletedAt: null, status: { in: ["DIAGNOSING", "WAITING_FOR_PARTS", "REPAIRING"] } } }),
@@ -41,6 +42,14 @@ export default async function DashboardPage() {
         include: { customer: true },
         orderBy: { createdAt: "desc" },
         take: 5,
+      }),
+      prisma.repairTicket.count({
+        where: {
+          deletedAt: null,
+          status: { in: [...TRACKABLE_STATUSES] },
+          dateReceived: { lte: overdueCutoffDate() },
+          ...(currentUser.role !== "ADMINISTRATOR" ? { visibility: "NORMAL" } : {}),
+        },
       }),
     ]);
 
@@ -100,14 +109,16 @@ export default async function DashboardPage() {
         { label: t("repairsInProgress", lang), value: repairsInProgress, icon: Wrench, color: "bg-purple-100 text-purple-600" },
         { label: t("completedRepairs", lang), value: completedTickets, icon: CheckCircle2, color: "bg-green-100 text-green-600" },
         { label: t("todaysIncome", lang), value: formatCurrency(todaysIncome), icon: Wallet, color: "bg-blue-100 text-blue-600" },
-        { label: t("lowStockItems", lang), value: lowStockCount, icon: AlertTriangle, color: "bg-red-100 text-red-600" },
+        { label: "Overdue / Forgotten", value: overdueCount, icon: Clock, color: "bg-red-100 text-red-600", href: "/repairs?overdue=1" },
+        { label: t("lowStockItems", lang), value: lowStockCount, icon: AlertTriangle, color: "bg-amber-100 text-amber-600" },
       ]
     : [
         { label: t("myAssignedRepairs", lang), value: myAssignedCount, icon: ClipboardList, color: "bg-blue-100 text-blue-600" },
         { label: t("pendingRepairs", lang), value: pendingCount, icon: Wrench, color: "bg-purple-100 text-purple-600" },
         { label: t("repairsInProgress", lang), value: repairsInProgress, icon: Wrench, color: "bg-orange-100 text-orange-600" },
         { label: t("readyForPickup", lang), value: readyCount, icon: PackageCheck, color: "bg-green-100 text-green-600" },
-        { label: t("lowStockItems", lang), value: lowStockCount, icon: AlertTriangle, color: "bg-red-100 text-red-600" },
+        { label: "Overdue / Forgotten", value: overdueCount, icon: Clock, color: "bg-red-100 text-red-600", href: "/repairs?overdue=1" },
+        { label: t("lowStockItems", lang), value: lowStockCount, icon: AlertTriangle, color: "bg-amber-100 text-amber-600" },
       ];
 
   return (
@@ -115,16 +126,25 @@ export default async function DashboardPage() {
       <h1 className="text-2xl font-semibold mb-1">{t("dashboard", lang)}</h1>
       <p className="text-slate-500 mb-6">{t("shopUpdateToday", lang)}</p>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
         {stats.map((stat) => {
           const Icon = stat.icon;
-          return (
-            <div key={stat.label} className="bg-white border border-orange-200 rounded-lg p-4">
+          const content = (
+            <>
               <div className={`h-9 w-9 rounded-md flex items-center justify-center mb-3 ${stat.color}`}>
                 <Icon size={18} />
               </div>
               <p className="text-2xl font-semibold">{stat.value}</p>
               <p className="text-xs text-slate-500 mt-1">{stat.label}</p>
+            </>
+          );
+          return "href" in stat && stat.href ? (
+            <Link key={stat.label} href={stat.href} className="bg-white border border-orange-200 rounded-lg p-4 hover:border-orange-400 transition-colors">
+              {content}
+            </Link>
+          ) : (
+            <div key={stat.label} className="bg-white border border-orange-200 rounded-lg p-4">
+              {content}
             </div>
           );
         })}

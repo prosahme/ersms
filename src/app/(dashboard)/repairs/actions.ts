@@ -6,33 +6,17 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { generateTicketNumber } from "@/lib/generate-ticket-number";
 import { requireAuth, UnauthorizedError } from "@/lib/auth-guard";
-
-const DEVICE_TYPES = [
-  "PHONE",
-  "TABLET",
-  "LAPTOP",
-  "DESKTOP",
-  "TV",
-  "RECEIVER",
-  "AMPLIFIER",
-  "MOSQUE_MICROPHONE",
-  "SPEAKER",
-  "OTHER",
-] as const;
+import { customerSchema } from "@/lib/customer-schema";
+import { DEVICE_TYPES, repairDetailsSchema, createRepairForCustomer } from "@/lib/repair-intake";
 
 const repairSchema = z.object({
-  customerId: z.string().min(1, "Customer is required"),
-  assignedTechnicianId: z.string().optional(),
-  deviceType: z.enum(DEVICE_TYPES),
-  deviceBrand: z.string().min(1, "Device brand is required"),
-  deviceModel: z.string().min(1, "Device model is required"),
-  serialNumberImei: z.string().optional(),
-  reportedProblem: z.string().min(1, "Reported problem is required"),
-  estimatedCost: z.coerce.number().min(0, "Estimated cost must be 0 or more"),
-  depositAmount: z.coerce.number().min(0, "Deposit amount must be 0 or more"),
-  paymentMethod: z.enum(["CASH", "TELEBIRR", "BANK_TRANSFER"]),
-  visibility: z.enum(["NORMAL", "PRIVATE"]).optional(),
-});
+  customerMode: z.enum(["existing", "new"]),
+  customerId: z.string().optional(),
+  newCustomerName: z.string().optional(),
+  newCustomerPhone: z.string().optional(),
+  newCustomerEmail: z.string().optional(),
+  newCustomerAddress: z.string().optional(),
+}).merge(repairDetailsSchema);
 
 export type RepairFormState = { error?: string };
 
@@ -49,7 +33,12 @@ export async function createRepairAction(
   }
 
   const parsed = repairSchema.safeParse({
+    customerMode: formData.get("customerMode"),
     customerId: formData.get("customerId"),
+    newCustomerName: formData.get("newCustomerName"),
+    newCustomerPhone: formData.get("newCustomerPhone"),
+    newCustomerEmail: formData.get("newCustomerEmail"),
+    newCustomerAddress: formData.get("newCustomerAddress"),
     assignedTechnicianId: formData.get("assignedTechnicianId"),
     deviceType: formData.get("deviceType"),
     deviceBrand: formData.get("deviceBrand"),
@@ -66,46 +55,71 @@ export async function createRepairAction(
     return { error: parsed.error.issues[0].message };
   }
 
-  // Server-side enforcement: only an Administrator can mark a repair
-  // PRIVATE, no matter what the submitted form data says.
-  const visibility =
-    parsed.data.visibility === "PRIVATE" && currentUser.role === "ADMINISTRATOR"
-      ? "PRIVATE"
-      : "NORMAL";
+  // Server-side validation of the customer half of the form — never trust
+  // that the client only submitted one mode correctly. Reuses the exact
+  // same rules as the standalone "New Customer" page (customerSchema),
+  // so a customer created from this combined flow is held to the same
+  // standard as one created the normal way.
+  let newCustomerData: { name: string; phone: string; email: string | null; address: string | null } | null = null;
 
-  const ticketNumber = await generateTicketNumber();
+  if (parsed.data.customerMode === "existing") {
+    if (!parsed.data.customerId || parsed.data.customerId.trim() === "") {
+      return { error: "Please select an existing customer, or switch to Add New Customer." };
+    }
+    const existingCustomer = await prisma.customer.findFirst({
+      where: { id: parsed.data.customerId, deletedAt: null },
+    });
+    if (!existingCustomer) {
+      return { error: "Selected customer could not be found. Please search again." };
+    }
+  } else {
+    const customerParsed = customerSchema.safeParse({
+      name: parsed.data.newCustomerName,
+      phone: parsed.data.newCustomerPhone,
+      email: parsed.data.newCustomerEmail,
+      address: parsed.data.newCustomerAddress,
+    });
+    if (!customerParsed.success) {
+      return { error: customerParsed.error.issues[0].message };
+    }
+    const duplicatePhone = await prisma.customer.findUnique({ where: { phone: customerParsed.data.phone } });
+    if (duplicatePhone) {
+      return { error: "A customer with this phone number already exists. Please search for them instead." };
+    }
+    newCustomerData = {
+      name: customerParsed.data.name,
+      phone: customerParsed.data.phone,
+      email: customerParsed.data.email || null,
+      address: customerParsed.data.address || null,
+    };
+  }
 
-  const ticket = await prisma.repairTicket.create({
-    data: {
-      ticketNumber,
-      customerId: parsed.data.customerId,
-      assignedTechnicianId: parsed.data.assignedTechnicianId || null,
-      deviceType: parsed.data.deviceType,
-      deviceBrand: parsed.data.deviceBrand,
-      deviceModel: parsed.data.deviceModel,
-      serialNumberImei: parsed.data.serialNumberImei || null,
-      reportedProblem: parsed.data.reportedProblem,
-      estimatedCost: parsed.data.estimatedCost,
-      depositAmount: parsed.data.depositAmount,
-      visibility,
-    },
-  });
-  await prisma.repairStatusHistory.create({
-  data: { repairId: ticket.id, status: "RECEIVED" },
-  });
+  let result;
+  try {
+    result = await createRepairForCustomer({
+      customerId: parsed.data.customerMode === "existing" ? parsed.data.customerId : undefined,
+      newCustomer: newCustomerData ?? undefined,
+      repair: parsed.data,
+      isAdministrator: currentUser.role === "ADMINISTRATOR",
+    });
+  } catch (e) {
+    return { error: "Could not create the repair ticket. Please check the details and try again." };
+  }
 
-  if (parsed.data.depositAmount > 0) {
-  await prisma.payment.create({
-    data: {
-      repairId: ticket.id,
-      amount: parsed.data.depositAmount,
-      paymentType: "DEPOSIT",
-      paymentMethod: parsed.data.paymentMethod,
-    },
-  });
-}
+  if (result.createdCustomerId) {
+    await prisma.notification.create({
+      data: {
+        type: "NEW_CUSTOMER",
+        title: "New Customer",
+        message: `New customer added: ${newCustomerData!.name}.`,
+        link: `/customers/${result.createdCustomerId}`,
+      },
+    });
+    revalidatePath("/customers");
+  }
+
   revalidatePath("/repairs");
-  redirect(`/repairs/${ticket.id}`);
+  redirect(`/repairs/${result.ticketId}`);
 }
 
 export async function syncOfflineRepair(repair: {
