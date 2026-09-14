@@ -1,0 +1,9 @@
+export const EXPENSE_CATEGORIES = [
+  "TEA_COFFEE",
+  "FOOD",
+  "TRANSPORT",
+  "UTILITIES",
+  "USED_DEVICE_PURCHASE",
+  "PARTS_PURCHASE",
+  "OTHER",
+] as const;

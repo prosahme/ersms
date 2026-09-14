@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { User, Smartphone } from "lucide-react";
-import { uploadMediaAction } from "./media-actions";
+import { MediaUploader } from "./media-uploader";
+import { MediaGridItem } from "./media-grid-item";
 import { updateStatusAction } from "./status-actions";
 import { addPartToRepairAction } from "./parts-actions";
 import { formatCurrency } from "@/lib/format-currency";
@@ -106,21 +107,11 @@ export default async function RepairDetailsPage({
           Documentation ({ticket.media.length})
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-          {ticket.media.map((m) =>
-            m.fileType === "IMAGE" ? (
-              <img key={m.id} src={m.fileUrl} className="rounded-md aspect-square object-cover" />
-            ) : (
-              <video key={m.id} src={m.fileUrl} controls className="rounded-md aspect-square object-cover" />
-            )
-          )}
+          {ticket.media.map((m) => (
+            <MediaGridItem key={m.id} media={m} repairId={ticket.id} canDelete={currentUser.role === "ADMINISTRATOR"} />
+          ))}
         </div>
-        <form action={uploadMediaAction} className="flex flex-wrap items-center gap-2">
-          <input type="hidden" name="repairId" value={ticket.id} />
-          <input type="file" name="file" accept="image/*,video/*" required className="text-sm" />
-          <button type="submit" className="rounded-md bg-orange-600 text-white px-3 py-1.5 text-sm">
-            Upload
-          </button>
-        </form>
+        <MediaUploader repairId={ticket.id} />
       </div>
 
       <div className="bg-white border border-orange-200 rounded-lg p-4">

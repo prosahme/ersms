@@ -5,6 +5,7 @@ export const translations = {
   repairTickets: { en: "Repair Tickets", am: "የጥገና ትኬቶች" },
   inventory: { en: "Inventory", am: "እቃዎች" },
   payments: { en: "Payments", am: "ክፍያዎች" },
+  shopExpenses: { en: "Expenses", am: "Expenses" },
   reminders: { en: "Reminders", am: "አስታዋሾች" },
   reports: { en: "Reports", am: "ሪፖርቶች" },
   notifications: { en: "Notifications", am: "ማሳወቂያዎች" },

@@ -156,6 +156,29 @@ model BusinessInfo {
   phone   String?
 }
 
+// Shop expenses unrelated to customer repair payments (coffee, rent,
+// transport, buying old devices to harvest parts from, etc). Kept
+// separate from Payment so repair revenue and shop spending never mix
+// in a single total by accident.
+//
+// USED_DEVICE_PURCHASE is intentionally just a normal expense category
+// with a free-text description (e.g. "Old Samsung TV, for parts") — no
+// extra relations added here. A future inventory feature can link a
+// SparePart back to the Expense it was harvested from (e.g. an optional
+// sourceExpenseId on SparePart) without requiring any change to this
+// model, keeping today's schema change minimal.
+model Expense {
+  id           String          @id @default(uuid())
+  category     ExpenseCategory
+  description  String
+  amount       Float
+  date         DateTime        @default(now())
+  recordedById String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  deletedAt    DateTime?
+}
+
 enum Role {
   ADMINISTRATOR
   MANAGER
@@ -188,6 +211,16 @@ enum DeviceType {
 enum RepairVisibility {
  NORMAL
  PRIVATE
+}
+
+enum ExpenseCategory {
+  TEA_COFFEE
+  FOOD
+  TRANSPORT
+  UTILITIES
+  USED_DEVICE_PURCHASE
+  PARTS_PURCHASE
+  OTHER
 }
 
 enum MediaType {

@@ -1,27 +1,39 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Wrench, Package, Wallet, BarChart3, Bell, Settings, LogOut, Calendar1 } from "lucide-react";
+import { LayoutDashboard, Users, Wrench, Package, Wallet, Receipt, BarChart3, Bell, Settings, LogOut, Calendar1 } from "lucide-react";
 import Image from "next/image";
 import { logoutAction } from "@/app/(dashboard)/logout-action";
 import { useSidebar } from "./sidebar-context";
 import { t } from "@/lib/translations";
+
+// Kept as a small local list rather than importing from auth-guard.ts —
+// this is a client component, and auth-guard.ts pulls in server-only
+// session code that can't be bundled client-side. This list is UI-only;
+// the actual access control is enforced server-side on every financial
+// page/action regardless of what the sidebar shows.
+const FINANCIAL_ROLES_CLIENT = ["ADMINISTRATOR", "MANAGER", "CASHIER"];
 
 const navItems = [
   { href: "/dashboard", key: "dashboard" as const, icon: LayoutDashboard },
   { href: "/customers", key: "customers" as const, icon: Users },
   { href: "/repairs", key: "repairTickets" as const, icon: Wrench },
   { href: "/inventory", key: "inventory" as const, icon: Package },
-  { href: "/payments", key: "payments" as const, icon: Wallet },
+  { href: "/payments", key: "payments" as const, icon: Wallet, financialOnly: true },
+  { href: "/expenses", key: "shopExpenses" as const, icon: Receipt, financialOnly: true },
   { href: "/reminders", key: "reminders" as const, icon: Calendar1, adminOnly: true },
-  { href: "/reports", key: "reports" as const, icon: BarChart3, adminOnly: true },
+  { href: "/reports", key: "reports" as const, icon: BarChart3, financialOnly: true },
   { href: "/notifications", key: "notifications" as const, icon: Bell },
 ];
 
 export function Sidebar({ role, lang }: { role?: string; lang: "en" | "am" }) {
   const pathname = usePathname();
   const { isOpen, close } = useSidebar();
-  const visibleItems = navItems.filter((item) => !item.adminOnly || role === "ADMINISTRATOR");
+  const visibleItems = navItems.filter((item) => {
+    if (item.adminOnly && role !== "ADMINISTRATOR") return false;
+    if (item.financialOnly && !FINANCIAL_ROLES_CLIENT.includes(role ?? "")) return false;
+    return true;
+  });
 
   return (
     <>

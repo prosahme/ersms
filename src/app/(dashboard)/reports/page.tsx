@@ -32,19 +32,45 @@ export default async function ReportsPage() {
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  const [todayPayments, weekPayments, monthPayments, statusCounts, deviceGroups, partGroups] = await Promise.all([
+  const [todayPayments, weekPayments, monthPayments, statusCounts, deviceGroups, partGroups, todayExpenses, weekExpenses, monthExpenses, monthExpenseByCategory] = await Promise.all([
     prisma.payment.findMany({ where: { createdAt: { gte: startOfToday } } }),
     prisma.payment.findMany({ where: { createdAt: { gte: sevenDaysAgo } } }),
     prisma.payment.findMany({ where: { createdAt: { gte: startOfMonth } } }),
     prisma.repairTicket.groupBy({ by: ["status"], where: { deletedAt: null }, _count: true }),
     prisma.repairTicket.groupBy({ by: ["deviceModel"], where: { deletedAt: null }, _count: true }),
     prisma.repairPart.groupBy({ by: ["partId"], _sum: { quantityUsed: true } }),
+    prisma.expense.findMany({ where: { deletedAt: null, date: { gte: startOfToday } } }),
+    prisma.expense.findMany({ where: { deletedAt: null, date: { gte: sevenDaysAgo } } }),
+    prisma.expense.findMany({ where: { deletedAt: null, date: { gte: startOfMonth } } }),
+    prisma.expense.groupBy({ by: ["category"], where: { deletedAt: null, date: { gte: startOfMonth } }, _sum: { amount: true } }),
   ]);
 
   const sum = (arr: { amount: number }[]) => arr.reduce((s, p) => s + p.amount, 0);
   const todayIncome = sum(todayPayments);
   const weekIncome = sum(weekPayments);
   const monthIncome = sum(monthPayments);
+
+  const todayExpenseTotal = sum(todayExpenses);
+  const weekExpenseTotal = sum(weekExpenses);
+  const monthExpenseTotal = sum(monthExpenses);
+
+  const netToday = todayIncome - todayExpenseTotal;
+  const netWeek = weekIncome - weekExpenseTotal;
+  const netMonth = monthIncome - monthExpenseTotal;
+
+  const expenseCategoryLabels: Record<string, string> = {
+    TEA_COFFEE: "Tea & Coffee",
+    FOOD: "Food",
+    TRANSPORT: "Transport",
+    UTILITIES: "Utilities",
+    USED_DEVICE_PURCHASE: "Used Device Purchase",
+    PARTS_PURCHASE: "Parts Purchase",
+    OTHER: "Other",
+  };
+  const expenseBreakdown = [...monthExpenseByCategory]
+    .map((g) => ({ category: expenseCategoryLabels[g.category] ?? g.category, amount: g._sum.amount ?? 0 }))
+    .sort((a, b) => b.amount - a.amount);
+  const maxExpenseCategoryAmount = expenseBreakdown[0]?.amount ?? 1;
 
   const trendData: { day: string; income: number }[] = [];
   const incomeByDay: Record<string, number> = {};
@@ -76,7 +102,7 @@ export default async function ReportsPage() {
       <h1 className="text-2xl font-semibold mb-1">{t("reports", lang)}</h1>
       <p className="text-slate-500 mb-6">{t("performanceOverview", lang)}</p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
         <div className="bg-white border border-orange-200 rounded-lg p-4">
           <p className="text-xs text-slate-500 mb-1">{t("todaysIncome", lang)}</p>
           <p className="text-2xl font-semibold">{formatCurrency(todayIncome)}</p>
@@ -91,14 +117,45 @@ export default async function ReportsPage() {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white border border-red-200 rounded-lg p-4">
+          <p className="text-xs text-slate-500 mb-1">Today's Expenses</p>
+          <p className="text-2xl font-semibold text-red-600">{formatCurrency(todayExpenseTotal)}</p>
+        </div>
+        <div className="bg-white border border-red-200 rounded-lg p-4">
+          <p className="text-xs text-slate-500 mb-1">Weekly Expenses</p>
+          <p className="text-2xl font-semibold text-red-600">{formatCurrency(weekExpenseTotal)}</p>
+        </div>
+        <div className={`rounded-lg p-4 ${netMonth >= 0 ? "bg-gradient-to-r from-green-600 to-emerald-500" : "bg-gradient-to-r from-red-600 to-rose-500"} text-white`}>
+          <p className="text-xs opacity-90 mb-1">Net Revenue (Month)</p>
+          <p className="text-2xl font-semibold">{formatCurrency(netMonth)}</p>
+          <p className="text-xs opacity-80 mt-1">Today: {formatCurrency(netToday)} · This week: {formatCurrency(netWeek)}</p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="bg-white border border-orange-200 rounded-lg p-4">
-          <h2 className="font-semibold mb-2">{t("dailyRevenueTrend", lang)}</h2>
-          <RevenueTrendChart data={trendData} />
+          <h2 className="font-semibold mb-3">Expense Breakdown by Category (This Month)</h2>
+          <div className="space-y-3">
+            {expenseBreakdown.map((e) => (
+              <div key={e.category}>
+                <div className="flex justify-between text-sm mb-1"><span>{e.category}</span><span className="font-medium">{formatCurrency(e.amount)}</span></div>
+                <div className="h-2 bg-red-100 rounded-full overflow-hidden"><div className="h-full bg-red-500 rounded-full" style={{ width: `${(e.amount / maxExpenseCategoryAmount) * 100}%` }} /></div>
+              </div>
+            ))}
+            {expenseBreakdown.length === 0 && <p className="text-sm text-slate-500">No expenses recorded this month.</p>}
+          </div>
         </div>
         <div className="bg-white border border-orange-200 rounded-lg p-4">
           <h2 className="font-semibold mb-2">{t("repairStatusDistribution", lang)}</h2>
           <RepairStatusChart data={statusChartData} total={totalStatusCount} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="bg-white border border-orange-200 rounded-lg p-4">
+          <h2 className="font-semibold mb-2">{t("dailyRevenueTrend", lang)}</h2>
+          <RevenueTrendChart data={trendData} />
         </div>
       </div>
 

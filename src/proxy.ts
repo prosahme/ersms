@@ -7,6 +7,7 @@ const protectedPaths = [
   "/repairs",
   "/inventory",
   "/payments",
+  "/expenses",
   "/reports",
   "/notifications",
   "/settings",
@@ -21,7 +22,7 @@ const adminOnlyPaths = ["/settings", "/reminders"];
 // Financial roles only (Owner/Administrator, Manager, Cashier): anything
 // that shows payment amounts, revenue, or profit. Technicians and any
 // other non-financial role are redirected away from these pages.
-const financialOnlyPaths = ["/payments", "/reports"];
+const financialOnlyPaths = ["/payments", "/expenses", "/reports"];
 const FINANCIAL_ROLES = ["ADMINISTRATOR", "MANAGER", "CASHIER"];
 
 export const proxy = auth((req) => {
@@ -58,6 +59,7 @@ export const config = {
     "/repairs/:path*",
     "/inventory/:path*",
     "/payments/:path*",
+    "/expenses/:path*",
     "/reports/:path*",
     "/notifications/:path*",
     "/settings/:path*",
