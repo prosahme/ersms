@@ -2,12 +2,12 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { requireAuth } from "@/lib/auth-guard";
+import { assertRepairAccess } from "@/lib/auth-guard";
 
 export async function updateStatusAction(formData: FormData) {
-  await requireAuth();
-
   const repairId = formData.get("repairId") as string;
+  await assertRepairAccess(repairId);
+
   const status = formData.get("status") as any;
   const notes = formData.get("notes") as string;
 

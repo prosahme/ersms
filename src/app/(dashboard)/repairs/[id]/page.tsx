@@ -50,6 +50,17 @@ export default async function RepairDetailsPage({
 
   if (!ticket) notFound();
 
+  // Server-side enforcement: a private (owner-only) repair is invisible
+  // to anyone who isn't an Administrator, even via a direct URL — we
+  // return notFound() rather than an "access denied" message so its
+  // existence isn't confirmed to unauthorized staff either. This was
+  // already correctly enforced on the repairs list query, but was
+  // missing here on the detail page itself — closed as part of the
+  // Day 6 security regression pass.
+  if (ticket.visibility === "PRIVATE" && currentUser.role !== "ADMINISTRATOR") {
+    notFound();
+  }
+
   const availableParts = await prisma.sparePart.findMany({
     where: { deletedAt: null, quantityAvailable: { gt: 0 } },
     orderBy: { name: "asc" },

@@ -3,8 +3,10 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth-guard";
+import { gatherBackupData } from "@/lib/backup";
+import { put } from "@vercel/blob";
 
-export type RestoreState = { error?: string; success?: boolean };
+export type RestoreState = { error?: string; success?: boolean; safetyBackupUrl?: string };
 
 export async function restoreBackupAction(
   _prevState: RestoreState,
@@ -29,6 +31,25 @@ export async function restoreBackupAction(
     return { error: "This doesn't look like an ERSMS backup file." };
   }
 
+  // Safety backup FIRST, before anything is deleted. If this fails for
+  // any reason, we stop here — the restore never runs, and no current
+  // data is touched.
+  let safetyBackupUrl: string;
+  try {
+    const safetyData = await gatherBackupData();
+    const blob = await put(
+      `safety-backups/pre-restore-${Date.now()}.json`,
+      JSON.stringify(safetyData, null, 2),
+      { access: "public", contentType: "application/json" }
+    );
+    safetyBackupUrl = blob.url;
+  } catch (error) {
+    console.error("SAFETY BACKUP FAILED — RESTORE ABORTED, NO DATA WAS TOUCHED:", error);
+    return {
+      error: "Could not create a safety backup of your current data, so the restore was not performed. No changes were made. Please try again.",
+    };
+  }
+
   try {
    await prisma.$transaction(
   async (tx) => {
@@ -36,12 +57,14 @@ export async function restoreBackupAction(
       await tx.repairStatusHistory.deleteMany();
       await tx.repairPart.deleteMany();
       await tx.payment.deleteMany();
+      await tx.expense.deleteMany();
       await tx.notification.deleteMany();
       await tx.reminder.deleteMany();
       await tx.repairTicket.deleteMany();
       await tx.sparePart.deleteMany();
       await tx.customer.deleteMany();
       await tx.businessInfo.deleteMany();
+      // User rows are intentionally left untouched — see note below.
 
       if (data.customers.length) await tx.customer.createMany({ data: data.customers });
       if (data.spareParts?.length) await tx.sparePart.createMany({ data: data.spareParts });
@@ -57,6 +80,14 @@ export async function restoreBackupAction(
       }
       if (data.repairParts?.length) await tx.repairPart.createMany({ data: data.repairParts });
       if (data.payments?.length) await tx.payment.createMany({ data: data.payments });
+      if (data.expenses?.length) {
+        await tx.expense.createMany({
+          data: data.expenses.map((e: any) => ({
+            ...e,
+            recordedById: existingUserIds.includes(e.recordedById) ? e.recordedById : null,
+          })),
+        });
+      }
       if (data.media?.length) await tx.media.createMany({ data: data.media });
       if (data.statusHistory?.length) await tx.repairStatusHistory.createMany({ data: data.statusHistory });
       if (data.reminders?.length) await tx.reminder.createMany({ data: data.reminders });
@@ -70,10 +101,10 @@ export async function restoreBackupAction(
 
 
     console.error("RESTORE ERROR:", error);
-    return { error: "Restore failed. The backup file may be corrupted or incompatible." };
+    return { error: "Restore failed. The backup file may be corrupted or incompatible. Your original data was not changed (the restore is transactional)." };
   }
 
   revalidatePath("/settings");
   revalidatePath("/dashboard");
-  return { success: true };
+  return { success: true, safetyBackupUrl };
 }

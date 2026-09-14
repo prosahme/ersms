@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
 import { loginAction, type LoginState } from "./actions";
 import { t, type Lang } from "@/lib/translations";
 
@@ -32,9 +33,9 @@ export function LoginForm({ lang }: { lang: Lang }) {
           <label htmlFor="password" className="block text-sm font-medium text-slate-900">
             {t("password", lang)}
           </label>
-          <a href="#" className="text-sm text-orange-600 hover:underline self-start">
+          <Link href="/forgot-password" className="text-sm text-orange-600 hover:underline self-start">
             {t("forgotPassword", lang)}
-          </a>
+          </Link>
         </div>
         <div className="relative">
           <input
