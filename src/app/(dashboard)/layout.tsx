@@ -3,7 +3,7 @@ import { Navbar } from "@/components/shared/navbar";
 import { SidebarProvider } from "@/components/shared/sidebar-context";
 import { auth } from "@/auth";
 import { getLanguage } from "@/lib/language";
-import { OfflineSync } from "@/components/shared/offline-sync";
+import { ConnectionStatus } from "@/components/shared/connection-status";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -20,7 +20,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <main className="flex-1 bg-orange-50">{children}</main>
         </div>
       </div>
-      <OfflineSync />
+      <ConnectionStatus />
     </SidebarProvider>
   );
 }

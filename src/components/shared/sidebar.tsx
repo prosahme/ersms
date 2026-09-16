@@ -6,6 +6,7 @@ import Image from "next/image";
 import { logoutAction } from "@/app/(dashboard)/logout-action";
 import { useSidebar } from "./sidebar-context";
 import { t } from "@/lib/translations";
+import { clearSnapshot } from "@/lib/offline-cache";
 
 // Kept as a small local list rather than importing from auth-guard.ts —
 // this is a client component, and auth-guard.ts pulls in server-only
@@ -81,7 +82,15 @@ export function Sidebar({ role, lang }: { role?: string; lang: "en" | "am" }) {
               {t("settings", lang)}
             </Link>
           )}
-          <form action={logoutAction}>
+          <form
+            action={logoutAction}
+            onSubmit={() => {
+              // Clear this user's cached offline data on sign-out so it
+              // isn't left on a shared shop computer for whoever logs in
+              // next. Fire-and-forget: never block or fail the logout.
+              void clearSnapshot();
+            }}
+          >
             <button type="submit" className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50">
               <LogOut size={18} />
               {t("logout", lang)}
