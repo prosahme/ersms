@@ -14,7 +14,7 @@ export function DeleteCustomerButton({ id }: { id: string }) {
       }}
     >
       <input type="hidden" name="id" value={id} />
-      <button type="submit" className="text-red-600 hover:underline text-sm">
+      <button type="submit" className="text-red-400 hover:text-red-300 hover:underline text-sm transition-colors">
         Delete
       </button>
     </form>

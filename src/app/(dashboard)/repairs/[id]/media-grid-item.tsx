@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { X, Loader2, Video } from "lucide-react";
 import { deleteMediaAction } from "./media-actions";
 
 type MediaItem = { id: string; fileUrl: string; fileType: string };
@@ -26,22 +27,49 @@ export function MediaGridItem({
     });
   }
 
+  const isImage = media.fileType === "IMAGE";
+
   return (
-    <div className="relative group">
-      {media.fileType === "IMAGE" ? (
-        <img src={media.fileUrl} className="rounded-md aspect-square object-cover w-full" />
+    <div
+      className={`ersms-fade-in ersms-gold-line group relative overflow-hidden rounded-xl border bg-[#0a0a0a] transition-all duration-200 hover:border-[#D4AF37]/70 hover:shadow-[0_10px_30px_rgba(212,175,55,0.10)] ${
+        isPending ? "opacity-50" : ""
+      }`}
+    >
+      {isImage ? (
+        <img
+          src={media.fileUrl}
+          alt="Repair documentation"
+          loading="lazy"
+          className="aspect-square w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+        />
       ) : (
-        <video src={media.fileUrl} controls className="rounded-md aspect-square object-cover w-full" />
+        <>
+          <video
+            src={media.fileUrl}
+            controls
+            preload="metadata"
+            className="aspect-square w-full bg-black object-cover"
+          />
+          <span className="pointer-events-none absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full border border-[#D4AF37]/40 bg-black/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#F5D76E]">
+            <Video size={11} aria-hidden="true" />
+            Video
+          </span>
+        </>
       )}
+
       {canDelete && (
         <button
           type="button"
           onClick={handleDelete}
           disabled={isPending}
-          className="absolute top-1 right-1 bg-red-600 text-white rounded-full h-6 w-6 flex items-center justify-center text-xs opacity-90 hover:opacity-100 disabled:opacity-50"
           aria-label="Delete file"
+          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-red-400/50 bg-black/75 text-red-300 transition-all duration-200 hover:border-red-400 hover:bg-red-600 hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-400/40 disabled:cursor-not-allowed"
         >
-          {isPending ? "…" : "✕"}
+          {isPending ? (
+            <Loader2 size={15} aria-hidden="true" className="animate-spin" />
+          ) : (
+            <X size={16} aria-hidden="true" />
+          )}
         </button>
       )}
     </div>

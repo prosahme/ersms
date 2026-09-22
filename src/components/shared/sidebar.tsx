@@ -1,7 +1,23 @@
 "use client";
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Wrench, Package, Wallet, Receipt, BarChart3, Bell, Settings, LogOut, Calendar1 } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  Wrench,
+  Package,
+  Wallet,
+  Receipt,
+  BarChart3,
+  Bell,
+  Settings,
+  LogOut,
+  Calendar1,
+  X,
+  ShieldCheck,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import { logoutAction } from "@/app/(dashboard)/logout-action";
 import { useSidebar } from "./sidebar-context";
@@ -27,6 +43,56 @@ const navItems = [
   { href: "/notifications", key: "notifications" as const, icon: Bell },
 ];
 
+function NavLink({
+  href,
+  icon: Icon,
+  label,
+  isActive,
+  index,
+  onNavigate,
+}: {
+  href: string;
+  icon: LucideIcon;
+  label: string;
+  isActive: boolean;
+  index: number;
+  onNavigate: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      aria-current={isActive ? "page" : undefined}
+      style={{ animationDelay: `${60 + index * 40}ms` }}
+      className={`ersms-fade-in group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4AF37]/70 ${
+        isActive
+          ? "bg-gradient-to-r from-[#D4AF37]/20 to-[#D4AF37]/[0.04] text-[#F5D76E] shadow-[inset_0_0_0_1px_rgba(212,175,55,0.18)]"
+          : "text-white/60 hover:bg-white/[0.05] hover:text-white"
+      }`}
+    >
+      {/* Active marker */}
+      <span
+        aria-hidden="true"
+        className={`absolute left-0 top-1/2 h-6 -translate-y-1/2 rounded-r-full bg-[#D4AF37] transition-all duration-300 ${
+          isActive ? "w-1 opacity-100" : "w-0 opacity-0"
+        }`}
+      />
+
+      <span
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-all duration-200 ${
+          isActive
+            ? "border-[#D4AF37]/45 bg-[#D4AF37]/15 text-[#F5D76E]"
+            : "border-white/10 bg-white/[0.03] text-white/55 group-hover:border-[#D4AF37]/35 group-hover:bg-[#D4AF37]/10 group-hover:text-[#F5D76E]"
+        }`}
+      >
+        <Icon size={18} aria-hidden="true" />
+      </span>
+
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+    </Link>
+  );
+}
+
 export function Sidebar({ role, lang }: { role?: string; lang: "en" | "am" }) {
   const pathname = usePathname();
   const { isOpen, close } = useSidebar();
@@ -36,52 +102,119 @@ export function Sidebar({ role, lang }: { role?: string; lang: "en" | "am" }) {
     return true;
   });
 
+  // Phones: Escape closes the drawer, and the page behind it doesn't scroll.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") close();
+    }
+    document.addEventListener("keydown", onKeyDown);
+
+    const isPhone = window.matchMedia("(max-width: 767px)").matches;
+    const previousOverflow = document.body.style.overflow;
+    if (isPhone) document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen, close]);
+
+  const roleLabel = role
+    ? role.charAt(0) + role.slice(1).toLowerCase().replace(/_/g, " ")
+    : null;
+
   return (
     <>
-      {isOpen && <div onClick={close} className="fixed inset-0 bg-black/30 z-30 md:hidden" />}
+      {/* Backdrop (phones only) */}
+      <div
+        onClick={close}
+        aria-hidden="true"
+        className={`fixed inset-0 z-30 bg-black/70 transition-opacity duration-300 md:hidden ${
+          isOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      />
+
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-orange-50 border-r border-orange-200 flex flex-col transform transition-transform duration-200 md:static md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] transform flex-col overflow-hidden border-r border-[#D4AF37]/15 bg-gradient-to-b from-[#0d0d0d] to-[#070707] shadow-[8px_0_40px_rgba(0,0,0,0.6)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] md:static md:w-64 md:max-w-none md:translate-x-0 md:shadow-none ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center gap-2 px-6 h-16 border-b border-orange-200">
-          <Image src="/logo-full.png" alt="ERSMS" width={28} height={28} />
-          <span className="font-semibold text-slate-900">Management</span>
+        {/* Soft ambient light at the top */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(ellipse_at_top,rgba(212,175,55,0.13),transparent_70%)]"
+        />
+
+        {/* Brand */}
+        <div className="relative flex h-16 shrink-0 items-center justify-between gap-3 border-b border-[#D4AF37]/15 px-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <Image
+              src="/logo-full.png"
+              alt="ERSMS"
+              width={36}
+              height={36}
+              className="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-[#D4AF37]/40"
+            />
+            <div className="min-w-0 leading-tight">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#B87333]">
+                ERSMS
+              </p>
+              <p className="ersms-gold-bright truncate text-base font-extrabold tracking-tight">
+                Management
+              </p>
+            </div>
+          </div>
+
+          {/* Close button (phones only) */}
+          <button
+            type="button"
+            onClick={close}
+            aria-label="Close menu"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-white/70 transition-all duration-200 hover:border-[#D4AF37]/50 hover:text-[#F5D76E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4AF37]/70 md:hidden"
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
         </div>
 
-        <nav className="flex-1 px-2 py-4 space-y-1">
-          {visibleItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname.startsWith(item.href);
-            return (
-              <Link
+        {/* Navigation */}
+        <nav
+          aria-label="Main navigation"
+          className="relative min-h-0 flex-1 overflow-y-auto px-3 py-5"
+        >
+          <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
+            Menu
+          </p>
+
+          <div className="space-y-1">
+            {visibleItems.map((item, index) => (
+              <NavLink
                 key={item.href}
                 href={item.href}
-                onClick={close}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium ${
-                  isActive ? "bg-orange-50 text-orange-600" : "text-slate-600 hover:bg-orange-50"
-                }`}
-              >
-                <Icon size={18} />
-                {t(item.key, lang)}
-              </Link>
-            );
-          })}
+                icon={item.icon}
+                label={t(item.key, lang)}
+                isActive={pathname.startsWith(item.href)}
+                index={index}
+                onNavigate={close}
+              />
+            ))}
+          </div>
         </nav>
 
-        <div className="px-2 py-4 border-t border-orange-200 space-y-1">
+        {/* Bottom: settings, role, logout */}
+        <div className="relative shrink-0 space-y-1 border-t border-[#D4AF37]/15 px-3 py-4">
           {role === "ADMINISTRATOR" && (
-            <Link
+            <NavLink
               href="/settings"
-              onClick={close}
-              className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium ${
-                pathname.startsWith("/settings") ? "bg-orange-50 text-orange-600" : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              <Settings size={18} />
-              {t("settings", lang)}
-            </Link>
+              icon={Settings}
+              label={t("settings", lang)}
+              isActive={pathname.startsWith("/settings")}
+              index={visibleItems.length}
+              onNavigate={close}
+            />
           )}
+
           <form
             action={logoutAction}
             onSubmit={() => {
@@ -91,11 +224,23 @@ export function Sidebar({ role, lang }: { role?: string; lang: "en" | "am" }) {
               void clearSnapshot();
             }}
           >
-            <button type="submit" className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50">
-              <LogOut size={18} />
-              {t("logout", lang)}
+            <button
+              type="submit"
+              className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-red-300 transition-all duration-200 hover:bg-red-500/10 hover:text-red-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-400/25 bg-red-500/[0.06] transition-all duration-200 group-hover:border-red-400/50 group-hover:bg-red-500/15">
+                <LogOut size={18} aria-hidden="true" />
+              </span>
+              <span className="min-w-0 flex-1 truncate text-left">{t("logout", lang)}</span>
             </button>
           </form>
+
+          {roleLabel && (
+            <p className="mt-2 flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] font-semibold text-white/45">
+              <ShieldCheck size={13} aria-hidden="true" className="shrink-0 text-[#D4AF37]/70" />
+              <span className="truncate">Signed in as {roleLabel}</span>
+            </p>
+          )}
         </div>
       </aside>
     </>

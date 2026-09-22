@@ -1,11 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import Link from "next/link";
+import { Search, ChevronRight, Users, Mail, Phone } from "lucide-react";
 import { DeleteCustomerButton } from "./delete-button";
 import { t, type Lang } from "@/lib/translations";
 
 type Customer = { id: string; name: string; phone: string; email: string | null };
+
+function initialOf(name: string) {
+  return name.trim().charAt(0).toUpperCase() || "?";
+}
 
 /**
  * Renders the search box and the customer list together, filtering
@@ -23,6 +28,7 @@ export function CustomersList({
   initialQuery?: string;
 }) {
   const [query, setQuery] = useState(initialQuery);
+  const inputId = useId();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -35,73 +41,159 @@ export function CustomersList({
     });
   }, [query, customers]);
 
+  const thClass =
+    "ersms-gold-bright px-5 py-4 text-left text-[11px] font-bold uppercase tracking-[0.12em]";
+
   return (
     <>
-      <div className="mb-4">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={t("searchByNameOrPhone", lang)}
-          autoComplete="off"
-          className="w-full max-w-sm rounded-md border border-orange-300 px-3 py-2 text-sm"
-        />
+      {/* Search */}
+      <div className="ersms-gold-line mb-6 rounded-2xl border bg-[#0d0d0d] p-4 sm:p-5">
+        <div className="group relative max-w-sm">
+          <label htmlFor={inputId} className="sr-only">
+            {t("searchByNameOrPhone", lang)}
+          </label>
+
+          <Search
+            size={17}
+            aria-hidden="true"
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#D4AF37]/60 transition-colors duration-200 group-focus-within:text-[#F5D76E]"
+          />
+
+          <input
+            id={inputId}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("searchByNameOrPhone", lang)}
+            autoComplete="off"
+            className="h-12 w-full rounded-xl border border-[#D4AF37]/30 bg-[#0a0a0a] pl-11 pr-4 text-sm text-white outline-none transition-all duration-200 placeholder:text-white/30 hover:border-[#D4AF37]/55 focus:border-[#D4AF37] focus:bg-[#0d0c08] focus:ring-4 focus:ring-[#D4AF37]/15 [color-scheme:dark]"
+          />
+        </div>
+
+        {query.trim() !== "" && (
+          <p className="mt-3 text-xs font-semibold text-white/45">
+            {filtered.length} of {customers.length} {customers.length === 1 ? "customer" : "customers"} shown
+          </p>
+        )}
       </div>
 
-      <div className="space-y-3 md:hidden">
-        {filtered.map((customer) => (
-          <div key={customer.id} className="bg-white border border-orange-200 rounded-lg p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-xs font-semibold flex-shrink-0">
-                {customer.name.charAt(0)}
+      {/* Cards: phones and tablets */}
+      <div className="grid gap-3 sm:grid-cols-2 xl:hidden">
+        {filtered.map((customer, i) => (
+          <div
+            key={customer.id}
+            className="ersms-fade-up ersms-gold-line group rounded-2xl border bg-[#0f0f0f] p-4 shadow-[0_12px_32px_rgba(0,0,0,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#D4AF37]/55 hover:bg-[#14130e] sm:p-5"
+            style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+          >
+            <div className="mb-3 flex items-center gap-3">
+              <div className="ersms-gold-button flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base font-extrabold">
+                {initialOf(customer.name)}
               </div>
-              <span className="font-medium">{customer.name}</span>
+              <span className="min-w-0 truncate text-[15px] font-extrabold text-white">
+                {customer.name}
+              </span>
             </div>
-            <p className="text-sm text-slate-600">{customer.phone}</p>
-            <p className="text-sm text-slate-600 mb-3">{customer.email ?? "—"}</p>
-            <div className="flex flex-wrap gap-3 pt-2 border-t border-orange-100">
-              <Link href={`/customers/${customer.id}`} className="text-orange-600 hover:underline text-sm">{t("viewProfile", lang)}</Link>
-              <Link href={`/customers/${customer.id}/edit`} className="text-slate-600 hover:underline text-sm">{t("edit", lang)}</Link>
+
+            <div className="space-y-1.5 text-sm">
+              <p className="flex items-center gap-2 text-white/60">
+                <Phone size={14} aria-hidden="true" className="shrink-0 text-[#D4AF37]/70" />
+                <span className="truncate">{customer.phone}</span>
+              </p>
+              {customer.email && (
+                <p className="flex items-center gap-2 text-white/60">
+                  <Mail size={14} aria-hidden="true" className="shrink-0 text-[#D4AF37]/70" />
+                  <span className="truncate">{customer.email}</span>
+                </p>
+              )}
+            </div>
+
+            <div className="ersms-gold-line mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t pt-3">
+              <Link
+                href={`/customers/${customer.id}`}
+                className="text-sm font-bold text-[#F5D76E] hover:underline"
+              >
+                {t("viewProfile", lang)}
+              </Link>
+              <Link
+                href={`/customers/${customer.id}/edit`}
+                className="text-sm font-semibold text-white/55 hover:text-white hover:underline"
+              >
+                {t("edit", lang)}
+              </Link>
               <DeleteCustomerButton id={customer.id} />
             </div>
           </div>
         ))}
-        {filtered.length === 0 && <p className="text-center text-orange-500 py-8">{t("noResultsYet", lang)}</p>}
+
+        {filtered.length === 0 && (
+          <div className="ersms-gold-line flex flex-col items-center gap-3 rounded-2xl border border-dashed bg-[#0d0d0d] px-6 py-14 text-center sm:col-span-2">
+            <Users size={30} aria-hidden="true" className="text-[#D4AF37]/70" />
+            <p className="text-sm font-semibold text-white/60">{t("noResultsYet", lang)}</p>
+          </div>
+        )}
       </div>
 
-      <div className="hidden md:block bg-white border border-orange-200 rounded-lg overflow-hidden">
+      {/* Table: large desktop screens */}
+      <div className="ersms-gold-border hidden overflow-x-auto rounded-2xl border bg-[#0d0d0d] shadow-[0_20px_60px_rgba(0,0,0,0.45)] xl:block">
         <table className="w-full text-sm">
-          <thead className="bg-orange-50 border-b border-orange-200">
+          <thead className="ersms-gold-border border-b bg-[#D4AF37]/[0.07]">
             <tr>
-              <th className="text-left px-4 py-3 font-medium text-orange-500">{t("customerName", lang)}</th>
-              <th className="text-left px-4 py-3 font-medium text-orange-500">{t("phone", lang)}</th>
-              <th className="text-left px-4 py-3 font-medium text-orange-500">{t("email", lang)}</th>
-              <th className="text-left px-4 py-3 font-medium text-orange-500">{t("actions", lang)}</th>
+              <th scope="col" className={thClass}>{t("customerName", lang)}</th>
+              <th scope="col" className={thClass}>{t("phone", lang)}</th>
+              <th scope="col" className={thClass}>{t("email", lang)}</th>
+              <th scope="col" className={thClass}>{t("actions", lang)}</th>
             </tr>
           </thead>
+
           <tbody>
             {filtered.map((customer) => (
-              <tr key={customer.id} className="border-b border-slate-100 last:border-0">
-                <td className="px-4 py-3">
+              <tr
+                key={customer.id}
+                className="ersms-gold-line group border-b transition-colors duration-200 last:border-0 hover:bg-[#D4AF37]/[0.06]"
+              >
+                <td className="px-5 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 text-xs font-semibold">
-                      {customer.name.charAt(0)}
+                    <div className="ersms-gold-button flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-extrabold">
+                      {initialOf(customer.name)}
                     </div>
-                    <span>{customer.name}</span>
+                    <span className="font-bold text-white">{customer.name}</span>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-slate-600">{customer.phone}</td>
-                <td className="px-4 py-3 text-slate-600">{customer.email ?? "—"}</td>
-                <td className="px-4 py-3 space-x-3">
-                  <Link href={`/customers/${customer.id}`} className="text-orange-600 hover:underline text-sm">{t("viewProfile", lang)}</Link>
-                  <Link href={`/customers/${customer.id}/edit`} className="text-slate-600 hover:underline text-sm">{t("edit", lang)}</Link>
-                  <DeleteCustomerButton id={customer.id} />
+                <td className="px-5 py-4 text-white/60">{customer.phone}</td>
+                <td className="px-5 py-4 text-white/60">{customer.email ?? "—"}</td>
+                <td className="px-5 py-4">
+                  <div className="flex items-center gap-4">
+                    <Link
+                      href={`/customers/${customer.id}`}
+                      className="ersms-gold-border inline-flex items-center gap-1 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-bold text-[#F5D76E] transition-all duration-200 hover:bg-[#D4AF37]/15 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#D4AF37]/30"
+                    >
+                      {t("viewProfile", lang)}
+                      <ChevronRight
+                        size={14}
+                        aria-hidden="true"
+                        className="transition-transform duration-200 group-hover:translate-x-0.5"
+                      />
+                    </Link>
+                    <Link
+                      href={`/customers/${customer.id}/edit`}
+                      className="text-xs font-semibold text-white/55 hover:text-white hover:underline"
+                    >
+                      {t("edit", lang)}
+                    </Link>
+                    <DeleteCustomerButton id={customer.id} />
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {filtered.length === 0 && <p className="text-center text-orange-500 py-8">{t("noResultsYet", lang)}</p>}
+
+        {filtered.length === 0 && (
+          <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
+            <Users size={30} aria-hidden="true" className="text-[#D4AF37]/70" />
+            <p className="text-sm font-semibold text-white/60">{t("noResultsYet", lang)}</p>
+          </div>
+        )}
       </div>
     </>
   );
