@@ -142,7 +142,7 @@ function Section({
         className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/70 to-transparent"
       />
 
-      <div className="mb-6 flex items-start gap-4 border-b border-[#D4AF37]/15 pb-5 sm:mb-7">
+      <div className="mb-6 flex items-start gap-4 border-b border-[#D4AF37]/15 pb-5">
         <div className="ersms-gold-border relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border bg-gradient-to-br from-[#D4AF37]/20 to-[#B87333]/10">
           <Icon size={20} aria-hidden="true" className="text-[#F5D76E]" />
 
@@ -176,7 +176,7 @@ export function NewRepairForm({
   technicians,
   isAdmin,
 }: {
-  customers: { id: string; name: string; phone: string }[];
+  customers: { id: string; name: string; phone: string | null }[];
   technicians: { id: string; fullName: string }[];
   isAdmin: boolean;
 }) {
@@ -473,6 +473,7 @@ export function NewRepairForm({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="hidden sm:block">
             <p className="ersms-gold-bright text-sm font-extrabold">Ready to create</p>
+
             <p className="mt-0.5 text-xs text-white/45">
               Review the information before submitting.
             </p>

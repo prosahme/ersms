@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-type CustomerOption = { id: string; name: string; phone: string };
+type CustomerOption = { id: string; name: string; phone: string | null };
 
 const controlBase =
   "block w-full rounded-xl border border-[#D4AF37]/35 bg-[#0a0a0a] pl-11 pr-4 text-sm text-white outline-none transition-all duration-200 placeholder:text-white/30 hover:border-[#D4AF37]/60 focus:border-[#D4AF37] focus:bg-[#0d0c08] focus:ring-4 focus:ring-[#D4AF37]/15 [color-scheme:dark]";
@@ -102,7 +102,7 @@ export function CustomerPicker({ customers }: { customers: CustomerOption[] }) {
       .filter(
         (c) =>
           c.name.toLowerCase().includes(q) ||
-          (qDigits !== "" && c.phone.replace(/\D/g, "").startsWith(qDigits))
+          (qDigits !== "" && (c.phone ?? "").replace(/\D/g, "").startsWith(qDigits))
       )
       .slice(0, 8);
   }, [query, customers]);
@@ -210,7 +210,7 @@ export function CustomerPicker({ customers }: { customers: CustomerOption[] }) {
                     />
                   </p>
                   <p className="mt-0.5 truncate text-sm text-white/60">
-                    {selected.phone}
+                    {selected.phone ?? "No phone on file"}
                   </p>
                 </div>
 
@@ -299,7 +299,7 @@ export function CustomerPicker({ customers }: { customers: CustomerOption[] }) {
                               {customer.name}
                             </p>
                             <p className="truncate text-xs text-white/55">
-                              {customer.phone}
+                              {customer.phone ?? "No phone on file"}
                             </p>
                           </div>
                         </div>
@@ -325,7 +325,8 @@ export function CustomerPicker({ customers }: { customers: CustomerOption[] }) {
       ) : (
         <div className="ersms-fade-in ersms-gold-line rounded-xl border bg-[#0a0a0a] p-4 sm:p-5">
           <p className="mb-5 text-xs leading-5 text-white/50">
-            This customer will be created together with the repair ticket.
+            This customer will be created together with the repair ticket. At
+            least the name or the phone number is required.
           </p>
 
           <div className="grid grid-cols-1 gap-x-5 gap-y-6 sm:grid-cols-2">
@@ -333,13 +334,12 @@ export function CustomerPicker({ customers }: { customers: CustomerOption[] }) {
               id={`${uid}-new-name`}
               label="Full name"
               icon={User}
-              required
+              optional
             >
               <input
                 id={`${uid}-new-name`}
                 name="newCustomerName"
                 type="text"
-                required={mode === "new"}
                 autoComplete="off"
                 placeholder="Customer's full name"
                 className={inputClass}
@@ -350,14 +350,13 @@ export function CustomerPicker({ customers }: { customers: CustomerOption[] }) {
               id={`${uid}-new-phone`}
               label="Phone number"
               icon={Phone}
-              required
+              optional
             >
               <input
                 id={`${uid}-new-phone`}
                 name="newCustomerPhone"
                 type="text"
                 inputMode="tel"
-                required={mode === "new"}
                 autoComplete="off"
                 placeholder="09XXXXXXXX"
                 className={inputClass}

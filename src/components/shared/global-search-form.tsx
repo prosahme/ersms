@@ -1,12 +1,43 @@
 "use client";
 
 import { useId } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Search } from "lucide-react";
 import { SidebarMenuButton } from "./sidebar-menu-button";
 
+/**
+ * Where a search goes, and what the placeholder says, depends on which
+ * section of the app the user is currently in. A ticket-number-looking
+ * query ("REP-..." style) still always jumps to Repairs, since that's
+ * a distinct lookup regardless of the current page.
+ */
+function resolveDestination(pathname: string, value: string): string {
+  if (/^rep-/i.test(value)) {
+    return `/repairs?search=${encodeURIComponent(value)}`;
+  }
+  if (pathname.startsWith("/inventory")) {
+    return `/inventory?search=${encodeURIComponent(value)}`;
+  }
+  if (pathname.startsWith("/payments")) {
+    return `/payments?search=${encodeURIComponent(value)}`;
+  }
+  if (pathname.startsWith("/repairs")) {
+    return `/repairs?search=${encodeURIComponent(value)}`;
+  }
+  // Default: customers, same as before.
+  return `/customers?search=${encodeURIComponent(value)}`;
+}
+
+function placeholderFor(pathname: string): string {
+  if (pathname.startsWith("/inventory")) return "Search spare parts by name or SKU...";
+  if (pathname.startsWith("/payments")) return "Search payments by ticket # or customer...";
+  if (pathname.startsWith("/repairs")) return "Search ticket # or customer...";
+  return "Search customer or ticket #...";
+}
+
 export function GlobalSearchForm() {
   const router = useRouter();
+  const pathname = usePathname();
   const inputId = useId();
 
   return (
@@ -17,11 +48,7 @@ export function GlobalSearchForm() {
         const input = e.currentTarget.elements.namedItem("q") as HTMLInputElement;
         const value = input.value.trim();
         if (!value) return;
-        if (/^rep-/i.test(value)) {
-          router.push(`/repairs?search=${encodeURIComponent(value)}`);
-        } else {
-          router.push(`/customers?search=${encodeURIComponent(value)}`);
-        }
+        router.push(resolveDestination(pathname, value));
       }}
       className="flex min-w-0 max-w-md flex-1 items-center gap-2 sm:gap-3 lg:max-w-lg"
     >
@@ -29,7 +56,7 @@ export function GlobalSearchForm() {
 
       <div className="group relative min-w-0 flex-1">
         <label htmlFor={inputId} className="sr-only">
-          Search customer or ticket number
+          {placeholderFor(pathname)}
         </label>
 
         <Search
@@ -44,7 +71,7 @@ export function GlobalSearchForm() {
           type="text"
           enterKeyHint="search"
           autoComplete="off"
-          placeholder="Search customer or ticket #..."
+          placeholder={placeholderFor(pathname)}
           className="block h-10 w-full min-w-0 truncate rounded-xl border border-[#D4AF37]/25 bg-[#0f0f0f] pl-10 pr-3 text-sm text-white outline-none transition-all duration-200 placeholder:text-white/35 hover:border-[#D4AF37]/50 focus:border-[#D4AF37] focus:bg-[#12110b] focus:ring-4 focus:ring-[#D4AF37]/15 sm:pr-14 [color-scheme:dark]"
         />
 

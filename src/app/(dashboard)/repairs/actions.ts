@@ -59,8 +59,10 @@ export async function createRepairAction(
   // that the client only submitted one mode correctly. Reuses the exact
   // same rules as the standalone "New Customer" page (customerSchema),
   // so a customer created from this combined flow is held to the same
-  // standard as one created the normal way.
-  let newCustomerData: { name: string; phone: string; email: string | null; address: string | null } | null = null;
+  // standard as one created the normal way. name/phone are each
+  // individually optional, as long as at least one of them is filled in
+  // (enforced inside customerSchema itself).
+  let newCustomerData: { name: string; phone: string | null; email: string | null; address: string | null } | null = null;
 
   if (parsed.data.customerMode === "existing") {
     if (!parsed.data.customerId || parsed.data.customerId.trim() === "") {
@@ -82,13 +84,22 @@ export async function createRepairAction(
     if (!customerParsed.success) {
       return { error: customerParsed.error.issues[0].message };
     }
-    const duplicatePhone = await prisma.customer.findUnique({ where: { phone: customerParsed.data.phone } });
-    if (duplicatePhone) {
-      return { error: "A customer with this phone number already exists. Please search for them instead." };
+
+    const phone =
+      customerParsed.data.phone && customerParsed.data.phone.trim() !== ""
+        ? customerParsed.data.phone.trim()
+        : null;
+
+    if (phone) {
+      const duplicatePhone = await prisma.customer.findUnique({ where: { phone } });
+      if (duplicatePhone) {
+        return { error: "A customer with this phone number already exists. Please search for them instead." };
+      }
     }
+
     newCustomerData = {
-      name: customerParsed.data.name,
-      phone: customerParsed.data.phone,
+      name: customerParsed.data.name?.trim() || "Unnamed customer",
+      phone,
       email: customerParsed.data.email || null,
       address: customerParsed.data.address || null,
     };

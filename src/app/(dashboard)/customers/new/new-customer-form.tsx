@@ -11,8 +11,6 @@ import {
   Building2,
   Hash,
   FileText,
-  CircleDollarSign,
-  WalletCards,
   Shield,
   LockKeyhole,
   ChevronDown,
@@ -29,7 +27,6 @@ const controlBase =
   "block w-full rounded-xl border border-[#D4AF37]/35 bg-[#0a0a0a] pl-11 pr-4 text-sm text-white outline-none transition-all duration-200 placeholder:text-white/30 hover:border-[#D4AF37]/60 focus:border-[#D4AF37] focus:bg-[#0d0c08] focus:ring-4 focus:ring-[#D4AF37]/15 [color-scheme:dark]";
 
 const inputClass = `${controlBase} h-12`;
-const numberClass = `${controlBase} h-12 pr-16 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`;
 const selectClass = `${controlBase} h-12 cursor-pointer appearance-none pr-11 [&>option]:bg-[#111111] [&>option]:text-white`;
 const textareaClass = `${controlBase} min-h-[120px] resize-y py-3.5 leading-6`;
 
@@ -40,7 +37,6 @@ function Field({
   optional = false,
   required = false,
   className = "",
-  suffix,
   chevron = false,
   alignTop = false,
   children,
@@ -51,7 +47,6 @@ function Field({
   optional?: boolean;
   required?: boolean;
   className?: string;
-  suffix?: string;
   chevron?: boolean;
   alignTop?: boolean;
   children: React.ReactNode;
@@ -90,11 +85,6 @@ function Field({
             size={16}
             className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#D4AF37]/75"
           />
-        )}
-        {suffix && (
-          <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold tracking-wide text-[#D4AF37]">
-            {suffix}
-          </span>
         )}
       </div>
     </div>
@@ -174,29 +164,27 @@ export function NewCustomerForm({
         number="1"
         icon={User}
         title="Customer Information"
-        description="Create the customer's basic profile and contact details."
+        description="Provide at least the customer's name or phone number."
         delay={0}
       >
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field id="name" label="Full name" icon={User} required className="sm:col-span-2">
+          <Field id="name" label="Full name" icon={User} optional className="sm:col-span-2">
             <input
               id="name"
               name="name"
               type="text"
-              required
               autoComplete="name"
               placeholder="Enter customer's full name"
               className={inputClass}
             />
           </Field>
 
-          <Field id="phone" label="Phone number" icon={Phone} required>
+          <Field id="phone" label="Phone number" icon={Phone} optional>
             <input
               id="phone"
               name="phone"
               type="text"
               inputMode="tel"
-              required
               autoComplete="tel"
               placeholder="09XXXXXXXX"
               className={inputClass}
@@ -225,6 +213,10 @@ export function NewCustomerForm({
             />
           </Field>
         </div>
+
+        <p className="mt-4 text-xs leading-5 text-white/40">
+          At least the name or the phone number is required — it&apos;s fine to leave the other one blank.
+        </p>
       </Section>
 
       {/* Repair toggle */}
@@ -254,8 +246,8 @@ export function NewCustomerForm({
                 Create a repair ticket now
               </p>
               <p className="mt-1 max-w-lg text-xs leading-5 text-white/45 sm:text-[13px]">
-                Register the customer&apos;s device and repair details together
-                with this customer profile.
+                Register the customer&apos;s device and the problem they reported, together with
+                this customer profile. Cost and payment can be added later from the repair ticket.
               </p>
             </div>
           </div>
@@ -280,7 +272,8 @@ export function NewCustomerForm({
         </div>
       </section>
 
-      {/* Repair information */}
+      {/* Repair information (Payment Information has been removed — cost
+          and deposit are added later from the repair ticket's own page) */}
       {includeRepair && (
         <Section
           number="2"
@@ -369,65 +362,11 @@ export function NewCustomerForm({
         </Section>
       )}
 
-      {/* Payment information */}
-      {includeRepair && (
-        <Section
-          number="3"
-          icon={CircleDollarSign}
-          title="Payment Information"
-          description="Record the estimated repair cost and initial deposit."
-          delay={140}
-        >
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field id="estimatedCost" label="Estimated cost" icon={CircleDollarSign} required suffix="ETB">
-              <input
-                id="estimatedCost"
-                name="estimatedCost"
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                required={includeRepair}
-                placeholder="0.00"
-                className={numberClass}
-              />
-            </Field>
-
-            <Field id="depositAmount" label="Deposit amount" icon={WalletCards} required suffix="ETB">
-              <input
-                id="depositAmount"
-                name="depositAmount"
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                required={includeRepair}
-                placeholder="0.00"
-                className={numberClass}
-              />
-            </Field>
-
-            <Field
-              id="paymentMethod"
-              label="Deposit payment method"
-              icon={WalletCards}
-              required
-              chevron
-              className="sm:col-span-2"
-            >
-              <select id="paymentMethod" name="paymentMethod" required={includeRepair} className={selectClass}>
-                <option value="CASH">Cash</option>
-                <option value="TELEBIRR">Telebirr</option>
-                <option value="BANK_TRANSFER">Bank Transfer</option>
-              </select>
-            </Field>
-          </div>
-        </Section>
-      )}
-
       {/* Admin only: private repair */}
       {includeRepair && isAdmin && (
         <section
           className="ersms-fade-up relative rounded-2xl border border-[#B87333]/40 bg-[#120f0a] p-5 sm:p-6"
-          style={{ animationDelay: "180ms" }}
+          style={{ animationDelay: "140ms" }}
         >
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-4">
@@ -491,7 +430,7 @@ export function NewCustomerForm({
       {/* Actions */}
       <div
         className="ersms-fade-up ersms-gold-border rounded-2xl border bg-[#0c0c0c] p-4 shadow-[0_-12px_40px_rgba(0,0,0,0.55)] sm:sticky sm:bottom-4 sm:z-20 sm:p-5"
-        style={{ animationDelay: "220ms" }}
+        style={{ animationDelay: "180ms" }}
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="hidden sm:block">

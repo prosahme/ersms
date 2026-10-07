@@ -31,17 +31,21 @@ export type CustomerFormState = { error?: string };
     return { error: parsed.error.issues[0].message };
   }
 
-  const existing = await prisma.customer.findUnique({
-    where: { phone: parsed.data.phone },
-  });
-  if (existing) {
-    return { error: "A customer with this phone number already exists." };
+  const phone = parsed.data.phone && parsed.data.phone.trim() !== "" ? parsed.data.phone.trim() : null;
+
+  // Duplicate check only applies when a phone number was actually given —
+  // multiple customers with no phone on file are expected and fine.
+  if (phone) {
+    const existing = await prisma.customer.findUnique({ where: { phone } });
+    if (existing) {
+      return { error: "A customer with this phone number already exists." };
+    }
   }
 
   const customer = await prisma.customer.create({
     data: {
-      name: parsed.data.name,
-      phone: parsed.data.phone,
+      name: parsed.data.name?.trim() || "Unnamed customer",
+      phone,
       email: parsed.data.email || null,
       address: parsed.data.address || null,
     },
@@ -98,21 +102,33 @@ export async function createCustomerWithRepairAction(
     return { error: customerParsed.error.issues[0].message };
   }
 
-  const duplicate = await prisma.customer.findUnique({ where: { phone: customerParsed.data.phone } });
-  if (duplicate) {
-    return { error: "A customer with this phone number already exists." };
+  const phone =
+    customerParsed.data.phone && customerParsed.data.phone.trim() !== ""
+      ? customerParsed.data.phone.trim()
+      : null;
+
+  if (phone) {
+    const duplicate = await prisma.customer.findUnique({ where: { phone } });
+    if (duplicate) {
+      return { error: "A customer with this phone number already exists." };
+    }
   }
 
+  // The Add Customer form no longer has Payment Information fields at
+  // all, so formData.get(...) returns null (not undefined) for those —
+  // converting null to undefined here lets repairDetailsSchema's
+  // .optional().default(...) actually apply, instead of trying (and
+  // failing) to validate a raw null value.
   const repairParsed = repairDetailsSchema.safeParse({
-    assignedTechnicianId: formData.get("assignedTechnicianId"),
+    assignedTechnicianId: formData.get("assignedTechnicianId") || undefined,
     deviceType: formData.get("deviceType"),
     deviceBrand: formData.get("deviceBrand"),
     deviceModel: formData.get("deviceModel"),
-    serialNumberImei: formData.get("serialNumberImei"),
+    serialNumberImei: formData.get("serialNumberImei") || undefined,
     reportedProblem: formData.get("reportedProblem"),
-    estimatedCost: formData.get("estimatedCost"),
-    depositAmount: formData.get("depositAmount"),
-    paymentMethod: formData.get("paymentMethod"),
+    estimatedCost: formData.get("estimatedCost") || undefined,
+    depositAmount: formData.get("depositAmount") || undefined,
+    paymentMethod: formData.get("paymentMethod") || undefined,
     visibility: formData.get("visibility") || undefined,
   });
   if (!repairParsed.success) {
@@ -120,13 +136,13 @@ export async function createCustomerWithRepairAction(
   }
 
   const newCustomerData = {
-    name: customerParsed.data.name,
-    phone: customerParsed.data.phone,
+    name: customerParsed.data.name?.trim() || "Unnamed customer",
+    phone,
     email: customerParsed.data.email || null,
     address: customerParsed.data.address || null,
   };
 
-  let result;
+    let result;
   try {
     result = await createRepairForCustomer({
       newCustomer: newCustomerData,
@@ -134,9 +150,9 @@ export async function createCustomerWithRepairAction(
       isAdministrator: currentUser.role === "ADMINISTRATOR",
     });
   } catch (e) {
+    console.error("createCustomerWithRepairAction failed:", e);
     return { error: "Could not create the customer and repair. Please check the details and try again." };
   }
-
   if (result.createdCustomerId) {
     await prisma.notification.create({
       data: {
@@ -177,18 +193,22 @@ export async function updateCustomerAction(
     return { error: parsed.error.issues[0].message };
   }
 
-  const existing = await prisma.customer.findFirst({
-    where: { phone: parsed.data.phone, NOT: { id } },
-  });
-  if (existing) {
-    return { error: "A customer with this phone number already exists." };
+  const phone = parsed.data.phone && parsed.data.phone.trim() !== "" ? parsed.data.phone.trim() : null;
+
+  if (phone) {
+    const existing = await prisma.customer.findFirst({
+      where: { phone, NOT: { id } },
+    });
+    if (existing) {
+      return { error: "A customer with this phone number already exists." };
+    }
   }
 
   await prisma.customer.update({
     where: { id },
     data: {
-      name: parsed.data.name,
-      phone: parsed.data.phone,
+      name: parsed.data.name?.trim() || "Unnamed customer",
+      phone,
       email: parsed.data.email || null,
       address: parsed.data.address || null,
     },

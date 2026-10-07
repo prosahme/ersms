@@ -24,6 +24,8 @@ import { MediaUploader } from "./media-uploader";
 import { MediaGridItem } from "./media-grid-item";
 import { updateStatusAction } from "./status-actions";
 import { addPartToRepairAction } from "./parts-actions";
+import { PartRowActions } from "./part-row-actions";
+import { EstimatedCostEditor } from "./estimated-cost-editor";
 import { formatCurrency } from "@/lib/format-currency";
 import { addPaymentAction } from "./payment-actions";
 import { requireAuth, canSeeFinancials } from "@/lib/auth-guard";
@@ -214,10 +216,12 @@ export default async function RepairDetailsPage({
             <p className="text-lg font-extrabold text-white">{ticket.customer.name}</p>
 
             <div className="mt-3 space-y-2 text-sm">
-              <p className="flex items-center gap-2.5 text-white/70">
-                <Phone size={15} aria-hidden="true" className="shrink-0 text-[#D4AF37]/70" />
-                <span className="break-all">{ticket.customer.phone}</span>
-              </p>
+              {ticket.customer.phone && (
+                <p className="flex items-center gap-2.5 text-white/70">
+                  <Phone size={15} aria-hidden="true" className="shrink-0 text-[#D4AF37]/70" />
+                  <span className="break-all">{ticket.customer.phone}</span>
+                </p>
+              )}
               {ticket.customer.email && (
                 <p className="flex items-center gap-2.5 text-white/70">
                   <Mail size={15} aria-hidden="true" className="shrink-0 text-[#D4AF37]/70" />
@@ -293,15 +297,20 @@ export default async function RepairDetailsPage({
                     key={rp.id}
                     className="ersms-gold-line flex items-center justify-between gap-3 rounded-xl border bg-[#0a0a0a] p-3.5 text-sm"
                   >
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="truncate font-bold text-white">{rp.sparePart.name}</p>
                       <p className="mt-0.5 text-xs text-white/50">
                         Qty {rp.quantityUsed} × {formatCurrency(rp.unitPriceAtUse)}
                       </p>
+                      <p className="mt-1 font-extrabold text-[#F5D76E]">
+                        {formatCurrency(rp.unitPriceAtUse * rp.quantityUsed)}
+                      </p>
                     </div>
-                    <p className="shrink-0 font-extrabold text-[#F5D76E]">
-                      {formatCurrency(rp.unitPriceAtUse * rp.quantityUsed)}
-                    </p>
+                    <PartRowActions
+                      repairId={ticket.id}
+                      repairPartId={rp.id}
+                      currentQuantity={rp.quantityUsed}
+                    />
                   </div>
                 ))}
               </div>
@@ -314,6 +323,7 @@ export default async function RepairDetailsPage({
                       <th scope="col" className="ersms-gold-bright px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em]">Qty</th>
                       <th scope="col" className="ersms-gold-bright px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em]">Unit Price</th>
                       <th scope="col" className="ersms-gold-bright px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em]">Subtotal</th>
+                      <th scope="col" className="ersms-gold-bright px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em]">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -327,6 +337,13 @@ export default async function RepairDetailsPage({
                         <td className="px-4 py-3 text-white/70">{formatCurrency(rp.unitPriceAtUse)}</td>
                         <td className="px-4 py-3 font-extrabold text-[#F5D76E]">
                           {formatCurrency(rp.unitPriceAtUse * rp.quantityUsed)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <PartRowActions
+                            repairId={ticket.id}
+                            repairPartId={rp.id}
+                            currentQuantity={rp.quantityUsed}
+                          />
                         </td>
                       </tr>
                     ))}
@@ -459,14 +476,7 @@ export default async function RepairDetailsPage({
         {isFinancial && (
           <Card title="Payments" icon={Wallet} delay={260}>
             <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="ersms-gold-line rounded-xl border bg-[#0a0a0a] p-4">
-                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/50">
-                  Repair Price
-                </p>
-                <p className="mt-1.5 text-xl font-extrabold text-white">
-                  {formatCurrency(ticket.estimatedCost)}
-                </p>
-              </div>
+              <EstimatedCostEditor repairId={ticket.id} estimatedCost={ticket.estimatedCost} />
 
               <div className="ersms-gold-line rounded-xl border bg-[#0a0a0a] p-4">
                 <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/50">

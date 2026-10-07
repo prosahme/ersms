@@ -6,10 +6,33 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAuth } from "@/lib/auth-guard";
 
+const PART_CATEGORIES = [
+  "CAPACITOR",
+  "RESISTOR",
+  "DIODE",
+  "TRANSISTOR",
+  "IC_CHIP",
+  "VOLTAGE_REGULATOR",
+  "INDUCTOR",
+  "FUSE",
+  "CONNECTOR",
+  "CABLE_WIRE",
+  "SCREEN_DISPLAY",
+  "BATTERY",
+  "SPEAKER",
+  "CAMERA_MODULE",
+  "CHARGING_PORT",
+  "MOTHERBOARD_PCB",
+  "BUTTON_SWITCH",
+  "SENSOR",
+  "ANTENNA",
+  "OTHER",
+] as const;
+
 const partSchema = z.object({
   name: z.string().min(1, "Name is required"),
   sku: z.string().min(1, "SKU is required"),
-  category: z.string().min(1, "Category is required"),
+  category: z.enum(PART_CATEGORIES, { message: "Please select a category" }),
   quantityAvailable: z.coerce.number().min(0, "Quantity must be 0 or more"),
   lowStockThreshold: z.coerce.number().min(0, "Threshold must be 0 or more"),
   unitCost: z.coerce.number().min(0, "Unit cost must be 0 or more"),

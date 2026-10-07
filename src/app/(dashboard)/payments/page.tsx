@@ -5,7 +5,7 @@ import { getLanguage } from "@/lib/language";
 import { t } from "@/lib/translations";
 import { requireFinancialAccess, UnauthorizedError, ForbiddenError } from "@/lib/auth-guard";
 import { redirect } from "next/navigation";
-import { Wallet, ChevronRight } from "lucide-react";
+import { Wallet, ChevronRight, X } from "lucide-react";
 
 const typeStyles: Record<string, string> = {
   DEPOSIT: "border-purple-400/40 bg-purple-500/15 text-purple-200",
@@ -19,7 +19,7 @@ const pillBase =
 export default async function PaymentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ method?: string }>;
+  searchParams: Promise<{ method?: string; search?: string }>;
 }) {
   // Defense-in-depth: middleware also blocks non-financial roles from this
   // route, but the page/query itself must never serve payment data to a
@@ -34,7 +34,7 @@ export default async function PaymentsPage({
   }
 
   const lang = await getLanguage();
-  const { method } = await searchParams;
+  const { method, search } = await searchParams;
   const methodLabels: Record<string, string> = {
     CASH: t("cash", lang),
     TELEBIRR: t("telebirr", lang),
@@ -47,18 +47,31 @@ export default async function PaymentsPage({
   };
 
   const payments = await prisma.payment.findMany({
-    where: method ? { paymentMethod: method as any } : {},
+    where: {
+      ...(method ? { paymentMethod: method as any } : {}),
+      ...(search
+        ? {
+            OR: [
+              { repairTicket: { ticketNumber: { contains: search, mode: "insensitive" } } },
+              { repairTicket: { customer: { name: { contains: search, mode: "insensitive" } } } },
+            ],
+          }
+        : {}),
+    },
     include: { repairTicket: { include: { customer: true } } },
     orderBy: { createdAt: "desc" },
   });
 
   const total = payments.reduce((sum, p) => sum + p.amount, 0);
 
+  // Filter links keep the current search term attached, so switching
+  // method doesn't wipe out what you typed.
+  const searchSuffix = search ? `&search=${encodeURIComponent(search)}` : "";
   const filters: { label: string; href: string; active: boolean }[] = [
-    { label: t("all", lang), href: "/payments", active: !method },
-    { label: t("cash", lang), href: "/payments?method=CASH", active: method === "CASH" },
-    { label: t("telebirr", lang), href: "/payments?method=TELEBIRR", active: method === "TELEBIRR" },
-    { label: t("bankTransfer", lang), href: "/payments?method=BANK_TRANSFER", active: method === "BANK_TRANSFER" },
+    { label: t("all", lang), href: `/payments${search ? `?search=${encodeURIComponent(search)}` : ""}`, active: !method },
+    { label: t("cash", lang), href: `/payments?method=CASH${searchSuffix}`, active: method === "CASH" },
+    { label: t("telebirr", lang), href: `/payments?method=TELEBIRR${searchSuffix}`, active: method === "TELEBIRR" },
+    { label: t("bankTransfer", lang), href: `/payments?method=BANK_TRANSFER${searchSuffix}`, active: method === "BANK_TRANSFER" },
   ];
 
   return (
@@ -99,6 +112,23 @@ export default async function PaymentsPage({
             </div>
           </div>
         </header>
+
+        {/* Active search indicator */}
+        {search && (
+          <div className="ersms-fade-up flex flex-wrap items-center gap-2 text-sm text-white/55">
+            <span>
+              Showing {payments.length} {payments.length === 1 ? "result" : "results"} for{" "}
+              <span className="font-bold text-[#F5D76E]">&ldquo;{search}&rdquo;</span>
+            </span>
+            <Link
+              href={method ? `/payments?method=${method}` : "/payments"}
+              className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-xs font-bold text-white/60 transition-colors duration-200 hover:border-[#D4AF37]/50 hover:text-[#F5D76E]"
+            >
+              <X size={12} aria-hidden="true" />
+              Clear
+            </Link>
+          </div>
+        )}
 
         {/* Filters */}
         <div
@@ -162,7 +192,9 @@ export default async function PaymentsPage({
         {payments.length === 0 && (
           <div className="ersms-gold-line flex flex-col items-center gap-3 rounded-2xl border border-dashed bg-[#0d0d0d] px-6 py-14 text-center">
             <Wallet size={30} aria-hidden="true" className="text-[#D4AF37]/70" />
-            <p className="text-sm font-semibold text-white/60">{t("noResultsYet", lang)}</p>
+            <p className="text-sm font-semibold text-white/60">
+              {search ? "No payments match your search." : t("noResultsYet", lang)}
+            </p>
           </div>
         )}
       </div>

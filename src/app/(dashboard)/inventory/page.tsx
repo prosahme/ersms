@@ -1,19 +1,51 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Plus, Package, AlertTriangle, ChevronRight } from "lucide-react";
+import { Plus, Package, AlertTriangle, ChevronRight, ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import { DeletePartButton } from "./delete-button";
 import { formatCurrency } from "@/lib/format-currency";
 import { getLanguage } from "@/lib/language";
 import { t } from "@/lib/translations";
 
-export default async function InventoryPage() {
+const fieldClass =
+  "h-12 w-full rounded-xl border border-[#D4AF37]/30 bg-[#0a0a0a] px-4 text-sm text-white outline-none transition-all duration-200 placeholder:text-white/30 hover:border-[#D4AF37]/55 focus:border-[#D4AF37] focus:bg-[#0d0c08] focus:ring-4 focus:ring-[#D4AF37]/15 [color-scheme:dark]";
+
+export default async function InventoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ search?: string; category?: string; lowStock?: string }>;
+}) {
   const lang = await getLanguage();
-  const parts = await prisma.sparePart.findMany({ where: { deletedAt: null }, orderBy: { name: "asc" } });
-  const lowStockCount = parts.filter((p) => p.quantityAvailable <= p.lowStockThreshold).length;
+  const { search, category, lowStock } = await searchParams;
+
+  const allParts = await prisma.sparePart.findMany({ where: { deletedAt: null } });
+  const lowStockCount = allParts.filter((p) => p.quantityAvailable <= p.lowStockThreshold).length;
+
+  const categories = Array.from(new Set(allParts.map((p) => p.category))).sort((a, b) =>
+    a.localeCompare(b)
+  );
+
+  const isLowStockOnly = lowStock === "1";
+
+  const parts = allParts
+    .filter((p) => {
+      if (category && p.category !== category) return false;
+      if (isLowStockOnly && p.quantityAvailable > p.lowStockThreshold) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        const matches =
+          p.name.toLowerCase().includes(q) ||
+          p.sku.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q);
+        if (!matches) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const hasActiveFilters = Boolean(search || category || isLowStockOnly);
 
   return (
     <div className="relative min-h-full overflow-hidden bg-[#050505] px-4 py-6 text-white sm:px-6 md:px-8 lg:px-10 lg:py-10">
-      {/* Soft ambient light (very subtle, no grid) */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(ellipse_at_top,rgba(212,175,55,0.10),transparent_65%)]"
@@ -40,9 +72,9 @@ export default async function InventoryPage() {
                 </h1>
 
                 <span className="ersms-gold-border inline-flex items-baseline gap-1.5 rounded-full border bg-[#D4AF37]/[0.07] px-3.5 py-1.5 text-sm font-bold text-[#F5D76E]">
-                  {parts.length}
+                  {allParts.length}
                   <span className="text-xs font-semibold uppercase tracking-wider text-white/50">
-                    {parts.length === 1 ? "part" : "parts"}
+                    {allParts.length === 1 ? "part" : "parts"}
                   </span>
                 </span>
 
@@ -65,7 +97,79 @@ export default async function InventoryPage() {
           </div>
         </header>
 
-        {/* Parts list */}
+        {/* Filter form: Category dropdown + Low Stock dropdown + Filter button */}
+        <form
+          method="get"
+          className="ersms-fade-up ersms-gold-line grid grid-cols-1 gap-3 rounded-2xl border bg-[#0d0d0d] p-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:p-5"
+          style={{ animationDelay: "60ms" }}
+        >
+          {search && <input type="hidden" name="search" value={search} />}
+
+          <div className="relative">
+            <select
+              name="category"
+              defaultValue={category ?? ""}
+              aria-label="Filter by category"
+              className={`${fieldClass} cursor-pointer appearance-none pr-10 [&>option]:bg-[#111111] [&>option]:text-white`}
+            >
+              <option value="">All Categories</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <ChevronDown
+              size={16}
+              aria-hidden="true"
+              className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#D4AF37]/70"
+            />
+          </div>
+
+          <div className="relative">
+            <select
+              name="lowStock"
+              defaultValue={lowStock ?? ""}
+              aria-label="Filter by stock level"
+              className={`${fieldClass} cursor-pointer appearance-none pr-10 [&>option]:bg-[#111111] [&>option]:text-white`}
+            >
+              <option value="">All Stock Levels</option>
+              <option value="1">Low Stock Only {lowStockCount > 0 ? `(${lowStockCount})` : ""}</option>
+            </select>
+            <ChevronDown
+              size={16}
+              aria-hidden="true"
+              className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#D4AF37]/70"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="ersms-gold-border inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border bg-[#161616] px-6 text-sm font-bold text-[#F5D76E] transition-all duration-200 hover:bg-[#D4AF37]/10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#D4AF37]/30 sm:col-span-2 lg:col-span-1 lg:w-auto"
+          >
+            <SlidersHorizontal size={16} aria-hidden="true" />
+            Filter
+          </button>
+        </form>
+
+        {hasActiveFilters && (
+          <div className="ersms-fade-up flex flex-wrap items-center gap-2 text-sm text-white/55">
+            <span>
+              Showing {parts.length} {parts.length === 1 ? "result" : "results"}
+              {search && (
+                <>
+                  {" "}for <span className="font-bold text-[#F5D76E]">&ldquo;{search}&rdquo;</span>
+                </>
+              )}
+            </span>
+            <Link
+              href="/inventory"
+              className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-xs font-bold text-white/60 transition-colors duration-200 hover:border-[#D4AF37]/50 hover:text-[#F5D76E]"
+            >
+              <X size={12} aria-hidden="true" />
+              Clear all
+            </Link>
+          </div>
+        )}
+
         <div className="space-y-3">
           {parts.map((part, i) => {
             const isLowStock = part.quantityAvailable <= part.lowStockThreshold;
@@ -79,12 +183,7 @@ export default async function InventoryPage() {
                 }`}
                 style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
               >
-                {isLowStock && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute inset-y-0 left-0 w-1 bg-red-500"
-                  />
-                )}
+                {isLowStock && <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1 bg-red-500" />}
 
                 <div className="min-w-0 flex-1">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -124,7 +223,9 @@ export default async function InventoryPage() {
         {parts.length === 0 && (
           <div className="ersms-gold-line flex flex-col items-center gap-3 rounded-2xl border border-dashed bg-[#0d0d0d] px-6 py-14 text-center">
             <Package size={30} aria-hidden="true" className="text-[#D4AF37]/70" />
-            <p className="text-sm font-semibold text-white/60">{t("noResultsYet", lang)}</p>
+            <p className="text-sm font-semibold text-white/60">
+              {hasActiveFilters ? "No parts match your filters." : t("noResultsYet", lang)}
+            </p>
           </div>
         )}
       </div>

@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   Coins,
   CircleDollarSign,
+  ChevronDown,
   Loader2,
   Save,
   CircleAlert,
@@ -19,12 +20,37 @@ import { updatePartAction, type PartFormState } from "../../actions";
 
 const initialState: PartFormState = {};
 
+const CATEGORY_OPTIONS = [
+  "Capacitor",
+  "Resistor",
+  "Diode",
+  "Transistor",
+  "IC Chip",
+  "Voltage Regulator",
+  "Inductor",
+  "Fuse",
+  "Connector",
+  "Cable / Wire",
+  "Screen / Display",
+  "Backlight",
+  "Battery",
+  "Speaker",
+  "Camera Module",
+  "Charging Port",
+  "Motherboard / PCB",
+  "Button / Switch",
+  "Sensor",
+  "Antenna",
+  "Other",
+];
+
 const controlBase =
   "block w-full rounded-xl border border-[#D4AF37]/35 bg-[#0a0a0a] pl-11 pr-4 text-sm text-white outline-none transition-all duration-200 placeholder:text-white/30 hover:border-[#D4AF37]/60 focus:border-[#D4AF37] focus:bg-[#0d0c08] focus:ring-4 focus:ring-[#D4AF37]/15 [color-scheme:dark]";
 
 const inputClass = `${controlBase} h-12`;
 const numberClass = `${controlBase} h-12 pr-4 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`;
 const numberSuffixClass = `${controlBase} h-12 pr-16 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`;
+const selectClass = `${controlBase} h-12 cursor-pointer appearance-none pr-11 [&>option]:bg-[#111111] [&>option]:text-white`;
 
 function Field({
   id,
@@ -33,6 +59,7 @@ function Field({
   required = false,
   className = "",
   suffix,
+  chevron = false,
   children,
 }: {
   id: string;
@@ -41,6 +68,7 @@ function Field({
   required?: boolean;
   className?: string;
   suffix?: string;
+  chevron?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -64,6 +92,13 @@ function Field({
           size={16}
           className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#D4AF37]/65 transition-colors duration-200 group-focus-within:text-[#F5D76E]"
         />
+        {chevron && (
+          <ChevronDown
+            aria-hidden="true"
+            size={16}
+            className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#D4AF37]/75"
+          />
+        )}
         {suffix && (
           <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold tracking-wide text-[#D4AF37]">
             {suffix}
@@ -96,6 +131,12 @@ export function EditPartForm({
       errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [state]);
+
+  // This part's saved category might be old messy text (e.g. "power ic",
+  // "Swich", "STR") that predates this dropdown. Nothing is overwritten
+  // automatically — it's shown as its own selected option so it's never
+  // silently lost; picking any real option below replaces it on save.
+  const categoryMatchesList = CATEGORY_OPTIONS.includes(part.category);
 
   return (
     <form action={formAction} className="space-y-5 sm:space-y-6">
@@ -132,16 +173,23 @@ export function EditPartForm({
             />
           </Field>
 
-          <Field id="category" label="Category" icon={Tags} required>
-            <input
+          <Field id="category" label="Category" icon={Tags} required chevron>
+            <select
               id="category"
               name="category"
-              type="text"
-              defaultValue={part.category}
               required
-              autoComplete="off"
-              className={inputClass}
-            />
+              defaultValue={part.category}
+              className={selectClass}
+            >
+              {!categoryMatchesList && (
+                <option value={part.category}>{part.category} (existing — please update)</option>
+              )}
+              {CATEGORY_OPTIONS.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
           </Field>
 
           <Field id="quantityAvailable" label="Quantity available" icon={Boxes} required>

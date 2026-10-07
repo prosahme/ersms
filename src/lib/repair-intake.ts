@@ -18,6 +18,12 @@ export const DEVICE_TYPES = [
 // Repair-side fields only — customer identification (existing vs. new) is
 // handled separately by whichever workflow is calling this, since "New
 // Repair" and "New Customer + Repair" gather that part differently.
+//
+// estimatedCost / depositAmount / paymentMethod are optional here with
+// safe defaults, because the "New Customer" form no longer collects
+// payment details at all (client request: Payment Information removed
+// from that form). The New Repair form still sends real values and keeps
+// its own "required" fields in the UI, so nothing changes there.
 export const repairDetailsSchema = z.object({
   assignedTechnicianId: z.string().optional(),
   deviceType: z.enum(DEVICE_TYPES),
@@ -25,9 +31,9 @@ export const repairDetailsSchema = z.object({
   deviceModel: z.string().min(1, "Device model is required"),
   serialNumberImei: z.string().optional(),
   reportedProblem: z.string().min(1, "Reported problem is required"),
-  estimatedCost: z.coerce.number().min(0, "Estimated cost must be 0 or more"),
-  depositAmount: z.coerce.number().min(0, "Deposit amount must be 0 or more"),
-  paymentMethod: z.enum(["CASH", "TELEBIRR", "BANK_TRANSFER"]),
+  estimatedCost: z.coerce.number().min(0, "Estimated cost must be 0 or more").optional().default(0),
+  depositAmount: z.coerce.number().min(0, "Deposit amount must be 0 or more").optional().default(0),
+  paymentMethod: z.enum(["CASH", "TELEBIRR", "BANK_TRANSFER"]).optional().default("CASH"),
   visibility: z.enum(["NORMAL", "PRIVATE"]).optional(),
 });
 
@@ -35,7 +41,7 @@ export type RepairDetailsInput = z.infer<typeof repairDetailsSchema>;
 
 export type NewCustomerInput = {
   name: string;
-  phone: string;
+  phone: string | null;
   email: string | null;
   address: string | null;
 };
