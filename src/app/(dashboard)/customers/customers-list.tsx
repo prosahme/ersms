@@ -6,7 +6,7 @@ import { Search, ChevronRight, Users, Mail, Phone } from "lucide-react";
 import { DeleteCustomerButton } from "./delete-button";
 import { t, type Lang } from "@/lib/translations";
 
-type Customer = { id: string; name: string; phone: string; email: string | null };
+type Customer = { id: string; name: string; phone: string | null ; email: string | null };
 
 function initialOf(name: string) {
   return name.trim().charAt(0).toUpperCase() || "?";
@@ -36,7 +36,7 @@ export function CustomersList({
     const qDigits = q.replace(/\D/g, "");
     return customers.filter((c) => {
       const nameMatch = c.name.toLowerCase().includes(q);
-      const phoneMatch = qDigits !== "" && c.phone.replace(/\D/g, "").includes(qDigits);
+      const phoneMatch = qDigits !== "" && (c.phone ?? "").replace(/\D/g, "").includes(qDigits);
       return nameMatch || phoneMatch;
     });
   }, [query, customers]);
@@ -159,7 +159,7 @@ export function CustomersList({
                     <span className="font-bold text-white">{customer.name}</span>
                   </div>
                 </td>
-                <td className="px-5 py-4 text-white/60">{customer.phone}</td>
+                <td className="px-5 py-4 text-white/60">{customer.phone ?? "—"}</td>
                 <td className="px-5 py-4 text-white/60">{customer.email ?? "—"}</td>
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-4">

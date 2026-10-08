@@ -60,7 +60,7 @@ function Field({
 export function EditCustomerForm({
   customer,
 }: {
-  customer: { id: string; name: string; phone: string; email: string | null; address: string | null };
+  customer: { id: string ; name: string; phone: string | null ; email: string | null; address: string | null };
 }) {
   const [state, formAction, isPending] = useActionState(updateCustomerAction, initialState);
   const errorRef = useRef<HTMLDivElement>(null);
@@ -73,7 +73,7 @@ export function EditCustomerForm({
 
   return (
     <form action={formAction} className="space-y-5 sm:space-y-6">
-      <input type="hidden" name="id" value={customer.id} />
+      <input type="hidden" name="id" value={customer.id ?? ""} />
 
       <section className="ersms-gold-line relative rounded-2xl border bg-[#101010] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.45)] sm:p-7">
         <span
@@ -104,7 +104,7 @@ export function EditCustomerForm({
               inputMode="tel"
               required
               autoComplete="tel"
-              defaultValue={customer.phone}
+              defaultValue={customer.phone ?? ""}
               className={inputClass}
             />
           </Field>

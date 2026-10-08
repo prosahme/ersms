@@ -26,6 +26,7 @@ import { updateStatusAction } from "./status-actions";
 import { addPartToRepairAction } from "./parts-actions";
 import { PartRowActions } from "./part-row-actions";
 import { EstimatedCostEditor } from "./estimated-cost-editor";
+import { DeleteRepairButton } from "./delete-repair-button";
 import { formatCurrency } from "@/lib/format-currency";
 import { addPaymentAction } from "./payment-actions";
 import { requireAuth, canSeeFinancials } from "@/lib/auth-guard";
@@ -162,7 +163,7 @@ export default async function RepairDetailsPage({
 
       <div className="relative mx-auto w-full max-w-5xl space-y-5 sm:space-y-6">
         {/* Back */}
-        <div className="ersms-fade-up">
+        <div className="ersms-fade-up flex items-center justify-between gap-3">
           <Link
             href="/repairs"
             className="group inline-flex items-center gap-2 rounded-lg text-sm font-semibold text-white/55 transition-colors duration-200 hover:text-[#F5D76E] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#D4AF37]/30"
@@ -174,6 +175,10 @@ export default async function RepairDetailsPage({
             />
             Back to repairs
           </Link>
+
+          {currentUser.role === "ADMINISTRATOR" && (
+            <DeleteRepairButton repairId={ticket.id} ticketNumber={ticket.ticketNumber} />
+          )}
         </div>
 
         {/* Header */}
