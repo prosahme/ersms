@@ -15,6 +15,7 @@ import {
 import { toggleUserActiveAction, updateBusinessInfoAction } from "./actions";
 import { NewUserForm } from "./new-user-form";
 import { ResetPasswordButton } from "./reset-password-button";
+import { DeleteUserButton } from "./delete-user-button";
 import { RestoreBackupForm } from "./restore-backup-form";
 import { getLanguage } from "@/lib/language";
 import { t } from "@/lib/translations";
@@ -144,6 +145,7 @@ export default async function SettingsPage({
                       </button>
                     </form>
                     <ResetPasswordButton userId={u.id} />
+                    <DeleteUserButton userId={u.id} fullName={u.fullName} />
                   </div>
                 </div>
               ))}
@@ -188,6 +190,7 @@ export default async function SettingsPage({
                             </button>
                           </form>
                           <ResetPasswordButton userId={u.id} />
+                          <DeleteUserButton userId={u.id} fullName={u.fullName} />
                         </div>
                       </td>
                     </tr>

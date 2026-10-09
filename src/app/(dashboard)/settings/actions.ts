@@ -107,5 +107,45 @@ export async function updateBusinessInfoAction(formData: FormData) {
   revalidatePath("/settings");
 }
 
+export type DeleteUserState = { error?: string };
 
+/**
+ * Permanently deletes a user account (the client explicitly wants real
+ * deletion here, not the existing Disable/Enable soft-toggle).
+ *
+ * Two safety checks, both server-side so they can't be bypassed from the
+ * client: an Administrator can't delete their own account (would risk
+ * locking everyone out), and a user who is still assigned as the
+ * technician on any repair ticket can't be deleted outright — their
+ * tickets would otherwise silently lose their assigned technician.
+ * Reassign those tickets first, then delete.
+ */
+export async function deleteUserAction(
+  _prevState: DeleteUserState,
+  formData: FormData
+): Promise<DeleteUserState> {
+  const currentUser = await requireAdmin();
 
+  const id = formData.get("id") as string;
+
+  if (id === currentUser.id) {
+    return { error: "You can't delete your own account." };
+  }
+
+  const assignedCount = await prisma.repairTicket.count({
+    where: { assignedTechnicianId: id, deletedAt: null },
+  });
+
+  if (assignedCount > 0) {
+    return {
+      error: `This user is still assigned to ${assignedCount} repair ticket${
+        assignedCount === 1 ? "" : "s"
+      }. Reassign those tickets to someone else first, then delete.`,
+    };
+  }
+
+  await prisma.user.delete({ where: { id } });
+
+  revalidatePath("/settings");
+  return {};
+}
