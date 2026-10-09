@@ -32,22 +32,28 @@ export async function createRepairAction(
     throw e;
   }
 
+  // Fields that don't exist in the current form (e.g. the "new customer"
+  // inputs when an existing customer is selected, or vice versa) come
+  // back from formData.get(...) as null, not undefined. Zod's
+  // .optional() only accepts undefined as "missing" — a raw null still
+  // fails validation — so every optional field is coerced with
+  // `|| undefined` here before parsing.
   const parsed = repairSchema.safeParse({
     customerMode: formData.get("customerMode"),
-    customerId: formData.get("customerId"),
-    newCustomerName: formData.get("newCustomerName"),
-    newCustomerPhone: formData.get("newCustomerPhone"),
-    newCustomerEmail: formData.get("newCustomerEmail"),
-    newCustomerAddress: formData.get("newCustomerAddress"),
-    assignedTechnicianId: formData.get("assignedTechnicianId"),
+    customerId: formData.get("customerId") || undefined,
+    newCustomerName: formData.get("newCustomerName") || undefined,
+    newCustomerPhone: formData.get("newCustomerPhone") || undefined,
+    newCustomerEmail: formData.get("newCustomerEmail") || undefined,
+    newCustomerAddress: formData.get("newCustomerAddress") || undefined,
+    assignedTechnicianId: formData.get("assignedTechnicianId") || undefined,
     deviceType: formData.get("deviceType"),
     deviceBrand: formData.get("deviceBrand"),
     deviceModel: formData.get("deviceModel"),
-    serialNumberImei: formData.get("serialNumberImei"),
+    serialNumberImei: formData.get("serialNumberImei") || undefined,
     reportedProblem: formData.get("reportedProblem"),
-    estimatedCost: formData.get("estimatedCost"),
-    depositAmount: formData.get("depositAmount"),
-    paymentMethod: formData.get("paymentMethod"),
+    estimatedCost: formData.get("estimatedCost") || undefined,
+    depositAmount: formData.get("depositAmount") || undefined,
+    paymentMethod: formData.get("paymentMethod") || undefined,
     visibility: formData.get("visibility") || undefined,
   });
 
@@ -114,6 +120,7 @@ export async function createRepairAction(
       isAdministrator: currentUser.role === "ADMINISTRATOR",
     });
   } catch (e) {
+    console.error("createRepairAction failed:", e);
     return { error: "Could not create the repair ticket. Please check the details and try again." };
   }
 
