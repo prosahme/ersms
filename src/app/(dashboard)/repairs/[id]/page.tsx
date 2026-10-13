@@ -29,6 +29,7 @@ import { EstimatedCostEditor } from "./estimated-cost-editor";
 import { DeleteRepairButton } from "./delete-repair-button";
 import { formatCurrency } from "@/lib/format-currency";
 import { addPaymentAction } from "./payment-actions";
+import { PaymentRowActions } from "./payment-row-actions";
 import { requireAuth, canSeeFinancials } from "@/lib/auth-guard";
 
 const statusLabels: Record<string, string> = {
@@ -519,19 +520,30 @@ export default async function RepairDetailsPage({
                   {ticket.payments!.map((p) => (
                     <div
                       key={p.id}
-                      className="ersms-gold-line flex items-center justify-between gap-3 rounded-xl border bg-[#0a0a0a] p-3.5 text-sm"
+                      className="ersms-gold-line flex flex-col gap-2 rounded-xl border bg-[#0a0a0a] p-3.5 text-sm"
                     >
-                      <div className="min-w-0">
-                        <p className="font-bold text-white">
-                          {paymentTypeLabels[p.paymentType] ?? p.paymentType}
-                        </p>
-                        <p className="mt-0.5 text-xs text-white/50">
-                          {p.paymentMethod.replace(/_/g, " ")} • {p.createdAt.toLocaleDateString()}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-bold text-white">
+                            {paymentTypeLabels[p.paymentType] ?? p.paymentType}
+                          </p>
+                          <p className="mt-0.5 text-xs text-white/50">
+                            {p.paymentMethod.replace(/_/g, " ")} • {p.createdAt.toLocaleDateString()}
+                          </p>
+                        </div>
+                        <p className="shrink-0 font-extrabold text-[#F5D76E]">
+                          {formatCurrency(p.amount)}
                         </p>
                       </div>
-                      <p className="shrink-0 font-extrabold text-[#F5D76E]">
-                        {formatCurrency(p.amount)}
-                      </p>
+                      <div className="ersms-gold-line flex justify-end border-t pt-2">
+                        <PaymentRowActions
+                          repairId={ticket.id}
+                          paymentId={p.id}
+                          currentAmount={p.amount}
+                          currentType={p.paymentType}
+                          currentMethod={p.paymentMethod}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -544,6 +556,7 @@ export default async function RepairDetailsPage({
                         <th scope="col" className="ersms-gold-bright px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em]">Method</th>
                         <th scope="col" className="ersms-gold-bright px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em]">Amount</th>
                         <th scope="col" className="ersms-gold-bright px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em]">Date</th>
+                        <th scope="col" className="ersms-gold-bright px-4 py-3 text-[11px] font-bold uppercase tracking-[0.12em]">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -563,6 +576,15 @@ export default async function RepairDetailsPage({
                           </td>
                           <td className="px-4 py-3 text-white/55">
                             {p.createdAt.toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3">
+                            <PaymentRowActions
+                              repairId={ticket.id}
+                              paymentId={p.id}
+                              currentAmount={p.amount}
+                              currentType={p.paymentType}
+                              currentMethod={p.paymentMethod}
+                            />
                           </td>
                         </tr>
                       ))}

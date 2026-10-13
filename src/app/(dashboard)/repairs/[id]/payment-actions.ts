@@ -41,3 +41,74 @@ export async function addPaymentAction(formData: FormData) {
      
   revalidatePath(`/repairs/${parsed.data.repairId}`);
 }
+
+const updatePaymentSchema = z.object({
+  paymentId: z.string(),
+  repairId: z.string(),
+  amount: z.coerce.number().min(0.01, "Amount must be greater than 0"),
+  paymentType: z.enum(["DEPOSIT", "PARTIAL", "FINAL"]),
+  paymentMethod: z.enum(["CASH", "TELEBIRR", "BANK_TRANSFER"]),
+});
+
+export type UpdatePaymentState = { error?: string };
+
+/**
+ * Corrects an already-recorded payment (wrong amount, type, or method
+ * entered by mistake). Same financial-access rule as adding a payment —
+ * same roles that can record one can fix one. No new notification is
+ * created here; the original "Payment Received" notification from when
+ * it was added stays as-is, since this is a correction, not a new event.
+ */
+export async function updatePaymentAction(
+  _prevState: UpdatePaymentState,
+  formData: FormData
+): Promise<UpdatePaymentState> {
+  await requireFinancialAccess();
+
+  const parsed = updatePaymentSchema.safeParse({
+    paymentId: formData.get("paymentId"),
+    repairId: formData.get("repairId"),
+    amount: formData.get("amount"),
+    paymentType: formData.get("paymentType"),
+    paymentMethod: formData.get("paymentMethod"),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const existing = await prisma.payment.findUnique({ where: { id: parsed.data.paymentId } });
+  if (!existing || existing.repairId !== parsed.data.repairId) {
+    return { error: "Payment not found." };
+  }
+
+  await prisma.payment.update({
+    where: { id: parsed.data.paymentId },
+    data: {
+      amount: parsed.data.amount,
+      paymentType: parsed.data.paymentType,
+      paymentMethod: parsed.data.paymentMethod,
+    },
+  });
+
+  revalidatePath(`/repairs/${parsed.data.repairId}`);
+  return {};
+}
+
+/**
+ * Removes a payment record entirely (e.g. it was logged by mistake and
+ * shouldn't count toward Total Paid at all). Same financial-access rule.
+ */
+export async function deletePaymentAction(formData: FormData) {
+  await requireFinancialAccess();
+
+  const paymentId = formData.get("paymentId") as string;
+  const repairId = formData.get("repairId") as string;
+
+  const existing = await prisma.payment.findUnique({ where: { id: paymentId } });
+  if (!existing || existing.repairId !== repairId) return;
+
+  await prisma.payment.delete({ where: { id: paymentId } });
+
+  revalidatePath(`/repairs/${repairId}`);
+}
