@@ -246,13 +246,23 @@ export function NewRepairForm({
           >
             <select id="deviceType" name="deviceType" required className={selectClass}>
               <option value="PHONE">Phone</option>
-              <option value="TABLET">Tablet</option>
-              <option value="LAPTOP">Laptop</option>
-              <option value="DESKTOP">Desktop</option>
               <option value="TV">TV</option>
               <option value="RECEIVER">Receiver</option>
+              <option value="STABILIZER">Stabilizer</option>
+              <option value="DIVIDER">Divider</option>
+              <option value="REMOTE">Remote</option>
+              <option value="MIXER">Mixer</option>
               <option value="AMPLIFIER">Amplifier</option>
-              <option value="MOSQUE_MICROPHONE">Mosque Microphone</option>
+              <option value="INVERTER">Inverter</option>
+              <option value="CAR_TAPE">Car Tape</option>
+              <option value="CD_TAPE">CD Tape</option>
+              <option value="WIRELESS_MIC">Wireless Mic</option>
+              <option value="MICROPHONE">Microphone</option>
+              <option value="HORN_SPEAKER">Horn Speaker</option>
+              <option value="JIPAS">Jipas</option>
+              <option value="PAYSTRA">Paystra</option>
+              <option value="HAIR_DRYER">Hair Dryer</option>
+              <option value="GRINDER">Grinder (መፍጫ)</option>
               <option value="SPEAKER">Speaker</option>
               <option value="OTHER">Other</option>
             </select>
@@ -482,7 +492,7 @@ export function NewRepairForm({
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
             <Link
               href="/repairs"
-              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-white/15 bg-[#161616] px-6 text-sm font-semibold text-white/80 transition-all duration-200 hover:border-[#D4AF37]/55 hover:bg-[#1c1c1c] hover:text-[#F5D76E] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#D4AF37]/30 sm:w-auto"
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-white/15 bg-[#161616] px-6 text-sm font-semibold text-white/80 transition-all duration-200 hover:border-[#D4AF37]/55 hover:bg-[#1c1c1c] hover:text-[#F5D76E] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#D4AF37]/40 sm:w-auto"
             >
               Cancel
             </Link>

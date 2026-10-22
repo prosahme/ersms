@@ -2,15 +2,26 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { generateTicketNumber } from "@/lib/generate-ticket-number";
 
+// Must stay in sync with enum DeviceType in schema.prisma.
 export const DEVICE_TYPES = [
   "PHONE",
-  "TABLET",
-  "LAPTOP",
-  "DESKTOP",
   "TV",
   "RECEIVER",
+  "STABILIZER",
+  "DIVIDER",
+  "REMOTE",
+  "MIXER",
   "AMPLIFIER",
-  "MOSQUE_MICROPHONE",
+  "INVERTER",
+  "CAR_TAPE",
+  "CD_TAPE",
+  "WIRELESS_MIC",
+  "MICROPHONE",
+  "HORN_SPEAKER",
+  "JIPAS",
+  "PAYSTRA",
+  "HAIR_DRYER",
+  "GRINDER",
   "SPEAKER",
   "OTHER",
 ] as const;

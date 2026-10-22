@@ -195,16 +195,31 @@ enum RepairStatus {
   DELIVERED
 }
 
+// Updated per client request. PHONE, SPEAKER and OTHER are kept even
+// though not on the client's new list, because existing repair tickets
+// (5 Phone, 4 Speaker, 1 Other, confirmed via SQL query) already use
+// them — removing them would break those tickets or fail the migration.
+// Everything else below is the client's requested list.
 enum DeviceType {
   PHONE
-  TABLET
-  LAPTOP
-  DESKTOP
   TV
   RECEIVER
+  STABILIZER
+  DIVIDER
+  REMOTE
+  MIXER
   AMPLIFIER
-  MOSQUE_MICROPHONE
-   SPEAKER
+  INVERTER
+  CAR_TAPE
+  CD_TAPE
+  WIRELESS_MIC
+  MICROPHONE
+  HORN_SPEAKER
+  JIPAS
+  PAYSTRA
+  HAIR_DRYER
+  GRINDER
+  SPEAKER
   OTHER
 }
 

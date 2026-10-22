@@ -304,13 +304,23 @@ export function NewCustomerForm({
             <Field id="deviceType" label="Device type" icon={Smartphone} required chevron className="sm:col-span-2">
               <select id="deviceType" name="deviceType" required={includeRepair} className={selectClass}>
                 <option value="PHONE">Phone</option>
-                <option value="TABLET">Tablet</option>
-                <option value="LAPTOP">Laptop</option>
-                <option value="DESKTOP">Desktop</option>
                 <option value="TV">TV</option>
                 <option value="RECEIVER">Receiver</option>
+                <option value="STABILIZER">Stabilizer</option>
+                <option value="DIVIDER">Divider</option>
+                <option value="REMOTE">Remote</option>
+                <option value="MIXER">Mixer</option>
                 <option value="AMPLIFIER">Amplifier</option>
-                <option value="MOSQUE_MICROPHONE">Mosque Microphone</option>
+                <option value="INVERTER">Inverter</option>
+                <option value="CAR_TAPE">Car Tape</option>
+                <option value="CD_TAPE">CD Tape</option>
+                <option value="WIRELESS_MIC">Wireless Mic</option>
+                <option value="MICROPHONE">Microphone</option>
+                <option value="HORN_SPEAKER">Horn Speaker</option>
+                <option value="JIPAS">Jipas</option>
+                <option value="PAYSTRA">Paystra</option>
+                <option value="HAIR_DRYER">Hair Dryer</option>
+                <option value="GRINDER">Grinder (መፍጫ)</option>
                 <option value="SPEAKER">Speaker</option>
                 <option value="OTHER">Other</option>
               </select>
